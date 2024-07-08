@@ -8,38 +8,58 @@ import gradio as gr
 import config as cfg
 from i18n import I18nAuto
 from slicer import AudioSlicer
-from merger import AudioMerger
+from normalizer import AudioNormalizer
+from remover import AudioRemover
+from transcriber import AudioTranscriber
 from packer import open_packer
-from remover import open_remover
-from transcriber import open_transcriber
-
 
 
 class WebUI(object):
 
     def __init__(self):
+        self.local_url = cfg.local_url
+        self.os_name = cfg.os_name
+        self.python_ver = cfg.python_ver
+        self.device = cfg.device
+        self.gpu_name = cfg.gpu_name
+
+        self.gr_title = cfg.gr_title
+        self.gr_theme = cfg.gr_theme
+        self.gr_max_size = cfg.gr_max_size
+        self.gr_default_concurrency_limit = cfg.gr_default_concurrency_limit
+        self.gr_is_inbrowser = cfg.gr_is_inbrowser
+        self.gr_is_quiet = cfg.gr_is_quiet
+        self.gr_server_name = cfg.gr_server_name
+        self.gr_webui_port = cfg.gr_webui_port
+        self.gr_is_share = cfg.gr_is_share
+
         self.i18n = I18nAuto()
         self.slicer = AudioSlicer()
-        self.merger = AudioMerger()
+        self.norm = AudioNormalizer()
+        self.remover = AudioRemover()
+        self.tran = AudioTranscriber()
+
+        print(self.i18n(f"Running on local URL: {self.local_url}"))
+        print(self.os_name, self.python_ver, self.device, self.gpu_name)
 
     def webui(self):
-        with gr.Blocks(title=cfg.gr_title, theme=cfg.gr_theme) as app:
+        with gr.Blocks(title=self.gr_title, theme=self.gr_theme) as app:
             gr.Markdown(self.i18n("# G-SoMapper WebUI"))
             gr.Markdown(self.i18n("**注意：UVR GUI 测试版和 Aegisub 的安装包在根目录的 packages 文件夹下。**"))
             gr.Markdown(self.i18n("##### 请按步骤开始构建您的 [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) 训练数据集："))
             with gr.Tabs():
                 with gr.TabItem(self.i18n("1. 准备音频")):
                     with gr.TabItem(self.i18n("1.1. 切分音频")):
-                        gr.Markdown(self.i18n("##### 切分过长的视频或音频文件，输出 WAV 格式的 16 位 32000 Hz 单声道音频，防止后续 UVR 爆内存或爆显存。"))
+                        gr.Markdown(self.i18n("##### 切分过长的视频或音频，输出 WAV 格式的 16 位 44100 Hz 单声道音频，防止后续 UVR 和 ASR 爆内存或爆显存。"))
                         with gr.Row():
                             with gr.Column():
                                 with gr.Group():
                                     with gr.Row():
-                                        gr.Markdown(self.i18n("输入路径。支持输入文件路径和目录路径。**默认值为 input。**"))
-                                        slicer_input_path = gr.Textbox(label=self.i18n("输入路径"), value="output/converted", interactive=True)
+                                        gr.Markdown(self.i18n("请上传需要切分的视频或音频。"))
+                                        slicer_input_path = gr.File(label=self.i18n("上传文件"), type="filepath", file_count="multiple", interactive=True)
                                 with gr.Group():
                                     with gr.Row():
-                                        gr.Markdown(self.i18n("输出目录。经过切分处理后，音频文件的输出目录。**默认值为 output_sliced。**"))
+                                        gr.Markdown(self.i18n("经过切分处理后，音频文件的输出目录。**默认值为 output_sliced。**"))
                                         slicer_output_path = gr.Textbox(label=self.i18n("输出目录"), value="output_sliced", interactive=True)
                                 with gr.Group():
                                     with gr.Row():
@@ -65,39 +85,38 @@ class WebUI(object):
                                     gr.Markdown(self.i18n("2. UVR-De-Echo 系列模型有三个档位，Normal、Aggressive，对应两种不同的回声强度，回声越大，选择的模型挡位也应当越高。Dereverb 挡位在 Aggressive 的基础上额外提供了去除混响功能，**但是 Reverb HQ 已经将混响去除，故不再重复此操作。**"))
                                     gr.Markdown(self.i18n("3. UVR-DeNoise 系列模型 **只推荐使用不带有 Lite 后缀的版本** ，即 UVR-DeNoise。"))
                                     gr.Markdown(self.i18n("4. Reverb HQ 模型的效果比 UVR-De-Echo-Dereverb 好"))
-                                    gr.Markdown(self.i18n("**5. 请设置 UVR 输出 WAV 格式的 PCM_16 音频**"))
-                                    gr.Markdown(self.i18n("**[更详细的 UVR 使用教程](https://www.bilibili.com/read/cv27499700)（bilibili）**"))
+                                    gr.Markdown(self.i18n("5. **[更详细的 UVR 使用教程](https://www.bilibili.com/read/cv27499700)（bilibili）**"))
                             with gr.Column():
                                 remover_info = gr.Textbox(label=self.i18n("进程输出信息"), interactive=False)
                                 open_remover_btn = gr.Button(self.i18n("开始过滤"), variant="primary", visible=True)
-                        open_remover_btn.click(open_remover, [], [remover_info, open_remover_btn])
-                    with gr.TabItem(self.i18n("1.3. 合并音频")):
-                        gr.Markdown(self.i18n("##### 合并多个短音频片段，并且均衡音频响度，优化音频质量，方便后续进一步处理。"))
+                        open_remover_btn.click(self.remover.open_remover, [], [remover_info, open_remover_btn])
+                    with gr.TabItem(self.i18n("1.3. 归一化音频")):
+                        gr.Markdown(self.i18n("##### 均衡音频响度，优化音频质量，输出 WAV 格式的 16 位 32000 Hz 单声道音频，方便后续进一步处理。"))
                         with gr.Row():
                             with gr.Column():
                                 with gr.Group():
                                     with gr.Row():
-                                        gr.Markdown(self.i18n("输入路径。支持输入目录路径。**默认值为 output_speech。**"))
-                                        merger_input_path = gr.Textbox(label=self.i18n("输入目录"), value="output_speech", interactive=True)
+                                        gr.Markdown(self.i18n("请上传需要归一化的音频。"))
+                                        norm_input_path = gr.File(label=self.i18n("上传音频"), type="filepath", file_count="multiple", interactive=True)
                                 with gr.Group():
                                     with gr.Row():
-                                        gr.Markdown(self.i18n("输出目录。经过切分处理后，音频文件的输出目录。**默认值为 output_merged。**"))
-                                        merger_output_path = gr.Textbox(label=self.i18n("输出目录"), value="output_merged", interactive=True)
+                                        gr.Markdown(self.i18n("经过归一化处理后，音频文件的输出目录。**默认值为 output_merged。**"))
+                                        norm_output_path = gr.Textbox(label=self.i18n("输出目录"), value="output_merged", interactive=True)
                                 with gr.Group():
                                     with gr.Row():
-                                        gr.Markdown(self.i18n("目标响度。该值越大，响度越大。**默认值为 -16.0。**"))
-                                        target_lufs = gr.Slider(label=self.i18n("目标响度（分贝）"), minimum=-36, maximum=-6, value=-16.0, step=0.1, interactive=True)
+                                        gr.Markdown(self.i18n("执行 ITU-R BS.1770-4 标准。该值越大，响度越大。**默认值为 -16.0。**"))
+                                        target_loud = gr.Slider(label=self.i18n("目标响度（分贝）"), minimum=-36.0, maximum=-6.0, value=-16.0, step=0.1, interactive=True)
                                 with gr.Group():
                                     with gr.Row():
-                                        gr.Markdown(self.i18n("最大振幅。该值越大，响度越大。**默认值为 -1.0。**"))
-                                        max_peak = gr.Slider(label=self.i18n("最大振幅（分贝）"), minimum=-12, maximum=-0.1, value=-1.0, step=0.1, interactive=True)
+                                        gr.Markdown(self.i18n("该值越大，响度越大。**默认值为 -1.0。**"))
+                                        max_peak = gr.Slider(label=self.i18n("最大振幅（分贝）"), minimum=-12.0, maximum=-0.1, value=-1.0, step=0.1, interactive=True)
                             with gr.Column():
-                                merger_info = gr.Textbox(label=self.i18n("进程输出信息"), interactive=False)
-                                open_merger_btn = gr.Button(self.i18n("开始合并"), variant="primary", visible=True)
-                        open_merger_btn.click(self.merger.open_merger, [merger_input_path, merger_output_path, target_lufs, max_peak], [merger_info, open_merger_btn])
+                                norm_info = gr.Textbox(label=self.i18n("进程输出信息"), interactive=False)
+                                open_norm_btn = gr.Button(self.i18n("开始归一化"), variant="primary", visible=True)
+                        open_norm_btn.click(self.norm.open_normalizer, [norm_input_path, norm_output_path, target_loud, max_peak], [norm_info, open_norm_btn])
                 with gr.TabItem(self.i18n("2. 准备标注")):
                     with gr.TabItem(self.i18n("2.1. 生成标注")):
-                        gr.Markdown(self.i18n("##### 生成准确率较高的字幕，之后可以在 GUI 中手动校对。"))
+                        gr.Markdown(self.i18n("##### 生成准确率较高的字幕，需要后期手动校对。"))
                         with gr.Row():
                             with gr.Column():
                                 with gr.Group():
@@ -124,37 +143,43 @@ class WebUI(object):
 
                         asr_model.change(change_lang_choices, [asr_model], [asr_lang])
                         asr_model.change(change_size_choices, [asr_model], [asr_size])
-                        open_tran_btn.click(open_transcriber, [], [tran_info, open_tran_btn])
-                    with gr.TabItem(self.i18n("2.2. 校对标注")):
+                        open_tran_btn.click(self.tran.open_transcriber, [], [tran_info, open_tran_btn])
+                    with gr.TabItem(self.i18n("2.2. 合并标注")):
+                        gr.Markdown(self.i18n("##### 合并字幕，方便在 GUI 中手动校对。"))
+                    with gr.TabItem(self.i18n("2.3. 校对标注")):
                         gr.Markdown(self.i18n("##### 在 GUI 中手动校对 ASR 生成的字幕，最终形成精确字幕。"))
-                with gr.TabItem(self.i18n("3. 打包数据")):
-                    gr.Markdown(self.i18n("##### 打包成适用于 GPT-SoVITS 的训练数据集，可以直接投入训练。"))
-                    with gr.Row():
-                        with gr.Column():
-                            with gr.Group():
-                                with gr.Row():
-                                    gr.Markdown(self.i18n("需打包的音频文件和同名的字幕文件所在目录的路径。**默认值为 output_revised。**"))
-                                    packer_input_path = gr.Textbox(label=self.i18n("Input: 输入目录"), value="output_revised", interactive=True)
-                            with gr.Group():
-                                with gr.Row():
-                                    gr.Markdown(self.i18n("打包后的训练数据集的输出目录。**默认值为 dataset。**"))
-                                    packer_output_path = gr.Textbox(label=self.i18n("Output: 输出目录"), value="dataset", interactive=True)
-                        with gr.Column():
-                            packer_info = gr.Textbox(label=self.i18n("进程输出信息"), interactive=False)
-                            open_packer_btn = gr.Button(self.i18n("开始打包"), variant="primary", visible=True)
-                    open_packer_btn.click(open_packer, [packer_input_path, packer_output_path], [packer_info, open_packer_btn])
-            app.queue(max_size=cfg.gr_max_size, default_concurrency_limit=cfg.gr_default_concurrency_limit).launch(
-                inbrowser=cfg.gr_is_inbrowser,
-                quiet=cfg.gr_is_quiet,
-                server_name=cfg.gr_server_name,
-                server_port=cfg.gr_webui_port_main,
-                share=cfg.gr_is_share,
+                with gr.TabItem(self.i18n("3. 准备数据")):
+                    with gr.TabItem(self.i18n("3.1 切分数据")):
+                        gr.Markdown(self.i18n("##### 根据校对后的 SRT 字幕切分 WAV 音频，并且生成 LIST 标注。"))
+                    with gr.TabItem(self.i18n("3.2 合并数据")):
+                        gr.Markdown(self.i18n("##### 根据 LIST 标注和指定的合并节点合并 WAV 音频，并且生成新的 LIST 标注。"))
+                    with gr.TabItem(self.i18n("3.3 打包数据")):
+                        gr.Markdown(self.i18n("##### 将合并后的数据打包成适用于 GPT-SoVITS 的训练数据集，可以直接投入训练。"))
+                        with gr.Row():
+                            with gr.Column():
+                                with gr.Group():
+                                    with gr.Row():
+                                        gr.Markdown(self.i18n("需打包的音频文件和同名的字幕文件所在目录的路径。**默认值为 output_revised。**"))
+                                        packer_input_path = gr.Textbox(label=self.i18n("Input: 输入目录"), value="output_revised", interactive=True)
+                                with gr.Group():
+                                    with gr.Row():
+                                        gr.Markdown(self.i18n("打包后的训练数据集的输出目录。**默认值为 dataset。**"))
+                                        packer_output_path = gr.Textbox(label=self.i18n("Output: 输出目录"), value="dataset", interactive=True)
+                            with gr.Column():
+                                packer_info = gr.Textbox(label=self.i18n("进程输出信息"), interactive=False)
+                                open_packer_btn = gr.Button(self.i18n("开始打包"), variant="primary", visible=True)
+                        open_packer_btn.click(open_packer, [packer_input_path, packer_output_path], [packer_info, open_packer_btn])
+                with gr.TabItem(self.i18n("4. 参考音频")):
+                    with gr.TabItem(self.i18n("4.1. 情感识别")):
+                        gr.Markdown(self.i18n("##### 施工中，请稍等……"))
+            app.queue(max_size=self.gr_max_size, default_concurrency_limit=self.gr_default_concurrency_limit).launch(
+                inbrowser=self.gr_is_inbrowser,
+                quiet=self.gr_is_quiet,
+                server_name=self.gr_server_name,
+                server_port=self.gr_webui_port,
+                share=self.gr_is_share
             )
 
 if __name__ == "__main__":
-    webui = WebUI()
-
-    print(webui.i18n(f"Running on local URL: {cfg.local_url}"))
-    print(cfg.os_name, cfg.python_ver, cfg.infer_device, cfg.gpu_name)
-
-    webui.webui()
+    main = WebUI()
+    main.webui()
