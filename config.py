@@ -50,36 +50,6 @@ else:
     is_half = False
 
 uvr_path = Path("uvr") / "ultimatevocalremovergui" / "UVR.py"
-# TODO START
-def check_fw_local_models():
-    '''
-    启动时检查本地是否有 Faster Whisper 模型.
-    '''
-    model_size_list = [
-        "tiny",     "tiny.en", 
-        "base",     "base.en", 
-        "small",    "small.en", 
-        "medium",   "medium.en", 
-        "large",    "large-v1", 
-        "large-v2", "large-v3"]
-    for i, size in enumerate(model_size_list):
-        if os.path.exists(f'src/asr/models/faster-whisper-{size}'):
-            model_size_list[i] = size + '-local'
-    return model_size_list
-
-asr_dict = {
-    "达摩 ASR（中文）": {
-        'lang': ['zh'],
-        'size': ['large'],
-        'path': 'funasr_asr.py',
-    },
-    "Faster Whisper (多语种)": {
-        'lang': ['auto', 'zh', 'en', 'ja'],
-        'size': check_fw_local_models(),
-        'path': 'fasterwhisper_asr.py'
-    }
-}
-# TODO END
 
 funasr_large_model_path = "models/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
 funasr_vad_model_path = "models/speech_fsmn_vad_zh-cn-16k-common-pytorch"
@@ -110,4 +80,3 @@ class Config:
         self.funasr_large_model_path = funasr_large_model_path
         self.funasr_vad_model_path = funasr_vad_model_path
         self.funasr_punc_model_path = funasr_punc_model_path
-        self.asr_dict = asr_dict
