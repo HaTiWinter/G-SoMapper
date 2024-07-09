@@ -93,7 +93,6 @@ class AudioSlicer(object):
                 "pipe:1"
             ]
 
-
             with open(file_path, "rb") as file:
                 with subp.Popen(
                     ffmpeg_cmd,
