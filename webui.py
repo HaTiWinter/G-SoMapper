@@ -59,8 +59,8 @@ class WebUI(object):
                                         slicer_input_path = gr.File(label=self.i18n("上传文件"), type="filepath", file_count="multiple", interactive=True)
                                 with gr.Group():
                                     with gr.Row():
-                                        gr.Markdown(self.i18n("经过切分处理后，音频文件的输出目录。**默认值为 output_sliced。**"))
-                                        slicer_output_path = gr.Textbox(label=self.i18n("输出目录"), value="output_sliced", interactive=True)
+                                        gr.Markdown(self.i18n("经过切分处理后，音频文件的输出目录。"))
+                                        slicer_output_path = gr.Textbox(label=self.i18n("输出目录"), interactive=True)
                                 with gr.Group():
                                     with gr.Row():
                                         gr.Markdown(self.i18n("每段音频切片的持续时间。此值越小，生成的音频切片就越多。如果过滤音频出现内存溢出或显存溢出错误，请将此值设置得更小。**默认值为 600（秒）。**"))
@@ -91,7 +91,7 @@ class WebUI(object):
                                 open_remover_btn = gr.Button(self.i18n("开始过滤"), variant="primary", visible=True)
                         open_remover_btn.click(self.remover.open_remover, [], [remover_info, open_remover_btn])
                     with gr.TabItem(self.i18n("1.3. 归一化音频")):
-                        gr.Markdown(self.i18n("##### 均衡音频响度，优化音频质量，输出 WAV 格式的 16 位 32000 Hz 单声道音频，方便后续进一步处理。"))
+                        gr.Markdown(self.i18n("##### 均衡音频响度，优化音频质量；输出 WAV 格式的 16 位 32000 Hz 单声道音频，方便后续进一步处理。"))
                         with gr.Row():
                             with gr.Column():
                                 with gr.Group():
@@ -100,8 +100,8 @@ class WebUI(object):
                                         norm_input_path = gr.File(label=self.i18n("上传音频"), type="filepath", file_count="multiple", interactive=True)
                                 with gr.Group():
                                     with gr.Row():
-                                        gr.Markdown(self.i18n("经过归一化处理后，音频文件的输出目录。**默认值为 output_merged。**"))
-                                        norm_output_path = gr.Textbox(label=self.i18n("输出目录"), value="output_merged", interactive=True)
+                                        gr.Markdown(self.i18n("经过归一化处理后，音频文件的输出目录。"))
+                                        norm_output_path = gr.Textbox(label=self.i18n("输出目录"), interactive=True)
                                 with gr.Group():
                                     with gr.Row():
                                         gr.Markdown(self.i18n("执行 ITU-R BS.1770-4 标准。该值越大，响度越大。**默认值为 -16.0。**"))
@@ -121,29 +121,16 @@ class WebUI(object):
                             with gr.Column():
                                 with gr.Group():
                                     with gr.Row():
-                                        asr_inp_dir = gr.Textbox(label=self.i18n("输入文件夹路径"), value="output_merged", interactive=True)
-                                    with gr.Row():
-                                        asr_opt_dir = gr.Textbox(label=self.i18n("输出文件夹路径"), value="output/asr_opt", interactive=True)
+                                        gr.Markdown(self.i18n("请上传需要转写的音频。"))
+                                        tran_input_path = gr.File(label=self.i18n("上传音频"), type="filepath", file_count="multiple", interactive=True)
                                 with gr.Group():
                                     with gr.Row():
-                                        asr_model = gr.Dropdown(label=self.i18n("ASR 模型"), choices=list(cfg.asr_dict.keys()), interactive=True, value="达摩 ASR（中文）")
-                                with gr.Group():
-                                    with gr.Row():
-                                        asr_size = gr.Dropdown(label=self.i18n("ASR 模型尺寸"), choices=["large"], interactive=True, value="large")
-                                with gr.Group():
-                                    with gr.Row():
-                                        asr_lang = gr.Dropdown(label=self.i18n("ASR 语言设置"), choices=["zh"], interactive=True, value="zh")
+                                        gr.Markdown(self.i18n("字幕文件的输出目录。"))
+                                        tran_output_path = gr.Textbox(label=self.i18n("输出目录"), interactive=True)
                             with gr.Column():
                                 tran_info = gr.Textbox(label=self.i18n("进程输出信息"), interactive=False)
                                 open_tran_btn = gr.Button(self.i18n("开始生成"), variant="primary", visible=True)
-                        def change_lang_choices(key):
-                            return {"__type__": "update", "choices": cfg.asr_dict[key]['lang'], "value": cfg.asr_dict[key]['lang'][0]}
-                        def change_size_choices(key):
-                            return {"__type__": "update", "choices": cfg.asr_dict[key]['size']}
-
-                        asr_model.change(change_lang_choices, [asr_model], [asr_lang])
-                        asr_model.change(change_size_choices, [asr_model], [asr_size])
-                        open_tran_btn.click(self.tran.open_transcriber, [], [tran_info, open_tran_btn])
+                        open_tran_btn.click(self.tran.open_transcriber, [tran_input_path, tran_output_path], [tran_info, open_tran_btn])
                     with gr.TabItem(self.i18n("2.2. 合并标注")):
                         gr.Markdown(self.i18n("##### 合并字幕，方便在 GUI 中手动校对。"))
                     with gr.TabItem(self.i18n("2.3. 校对标注")):

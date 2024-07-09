@@ -1,6 +1,7 @@
 import subprocess as subp
-from typing import Generator
 from pathlib import Path
+from typing import Generator
+from typing import Optional
 from typing import Tuple
 from typing import Dict
 
@@ -45,7 +46,7 @@ class AudioSlicer(object):
 
     def open_slicer(
         self,
-        input: tuple[str],
+        input: Optional[tuple[str]],
         output: str,
         duration: int
     ) -> Generator[Tuple[str, Dict[str, str | bool]], None, None]:

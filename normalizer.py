@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Generator
+from typing import Optional
 from typing import Tuple
 from typing import Dict
 
@@ -54,7 +55,7 @@ class AudioNormalizer(object):
 
     def open_normalizer(
         self,
-        input: tuple[str],
+        input: Optional[tuple[str]],
         output: str,
         target_loud: float,
         max_peak: float
