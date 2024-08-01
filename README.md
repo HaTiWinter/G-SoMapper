@@ -1,9 +1,9 @@
 # G-SoMapper
 
-## About the project
+## About the repository
 
 Efficient and accurate GPT-SoVITS dataset creation, better than official method.
 
-## Others
+## What's new?
 
 Waiting for the apple to fall on my head...
