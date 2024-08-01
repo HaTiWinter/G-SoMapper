@@ -1,0 +1,10 @@
+.vscode/
+__pycache__/
+temp/
+runtime/
+src/funasr/
+audio/__pycache__/
+label/__pycache__/
+dataset/__pycache__/
+ffmpeg.exe
+go-main-webui.bat
