@@ -2,7 +2,7 @@
 
 ## About the repository
 
-Efficient and accurate GPT-SoVITS dataset creation, better than official method.
+Efficient and accurate GPT-SoVITS dataset creation.
 
 ## What's new?
 
