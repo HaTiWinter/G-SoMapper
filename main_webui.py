@@ -5,12 +5,9 @@ from subprocess import Popen
 from pathlib import Path
 from typing import Generator
 from typing import Optional
-from typing import Tuple
-from typing import Dict
-from typing import List
 
-current_path: Path = Path(__file__).parent
-temp_path: Path = current_path / "temp"
+current_path = Path(__file__).parent
+temp_path = current_path / "temp"
 if temp_path.exists():
     shutil.rmtree(temp_path)
 temp_path.mkdir(parents=True, exist_ok=True)
@@ -18,15 +15,13 @@ current_path_str = str(current_path)
 temp_path_str = str(temp_path)
 
 sys.path.insert(0, current_path_str)
-current_value: str = os.environ.get("Path", '')
+current_value = os.environ.get("Path", '')
 if current_path_str not in current_value:
-    new_value: str = f"{current_path_str}{os.pathsep}{current_value}" if current_value else current_path_str
+    new_value = f"{current_path_str}{os.pathsep}{current_value}" if current_value else current_path_str
     os.environ["Path"] = new_value
 os.environ["TEMP"] = temp_path_str
-os.environ["TMP"] = temp_path_str
 
 import gradio as gr
-from gradio.themes.default import Default
 
 from config import Config
 from i18n import I18nAuto
@@ -45,24 +40,24 @@ class MainWebUI(object):
         self.merger = AudioMerger()
         self.tran_webui_proc = None
 
-        self.gr_main_title: str = self.cfg.gr_main_title
-        self.gr_theme: Default = self.cfg.gr_theme
-        self.gr_max_size: int = self.cfg.gr_max_size
-        self.gr_default_concurrency_limit: int = self.cfg.gr_default_concurrency_limit
-        self.gr_is_inbrowser: bool = self.cfg.gr_is_inbrowser
-        self.gr_is_quiet: bool = self.cfg.gr_is_quiet
-        self.gr_is_share: bool = self.cfg.gr_is_share
-        self.gr_server_name: str = self.cfg.gr_server_name
-        self.gr_main_webui_port: int = self.cfg.gr_main_webui_port
+        self.gr_main_title = self.cfg.gr_main_title
+        self.gr_theme = self.cfg.gr_theme
+        self.gr_max_size = self.cfg.gr_max_size
+        self.gr_default_concurrency_limit = self.cfg.gr_default_concurrency_limit
+        self.gr_is_inbrowser = self.cfg.gr_is_inbrowser
+        self.gr_is_quiet = self.cfg.gr_is_quiet
+        self.gr_is_share = self.cfg.gr_is_share
+        self.gr_server_name = self.cfg.gr_server_name
+        self.gr_main_webui_port = self.cfg.gr_main_webui_port
 
-        self.transcriber_webui_path: str = self.cfg.transcriber_webui_path
-        self.transcriber_webui_cmd: list[str] = self.cfg.transcriber_webui_cmd
+        self.transcriber_webui_path = self.cfg.transcriber_webui_path
+        self.transcriber_webui_cmd = self.cfg.transcriber_webui_cmd
 
-        self.main_local_url: str = self.cfg.main_local_url
-        self.os_name: str = self.cfg.os_name
-        self.python_ver: str = self.cfg.python_ver
-        self.device: str = self.cfg.device
-        self.gpu_names: List[str] = self.cfg.gpu_names
+        self.main_local_url = self.cfg.main_local_url
+        self.os_name = self.cfg.os_name
+        self.python_ver = self.cfg.python_ver
+        self.device = self.cfg.device
+        self.gpu_names = self.cfg.gpu_names
 
         print(self.os_name, self.python_ver, self.device, self.gpu_names)
         print(self.i18n(f"Homepage running on local URL: {self.main_local_url}"))
@@ -76,7 +71,7 @@ class MainWebUI(object):
         min_interval: int,
         hop_size: int,
         max_sil_kept: int
-    ) -> Generator[Tuple[str, Dict[str, str | bool]], None, None]:
+    ) -> Generator[tuple[str, dict[str, str | bool]], None, None]:
         for res in AudioSlicer(
             threshold,
             min_length,
@@ -89,18 +84,18 @@ class MainWebUI(object):
     def _open_transcriber_webui(self, tran_webui_chk: bool) -> Generator[str, None, None]:
         if tran_webui_chk is True and self.tran_webui_proc is None:
             self.tran_webui_proc = Popen(self.transcriber_webui_cmd)
-            open_msg: str = self.i18n(f"Transcriber WebUI 运行中：{self.transcriber_webui_path}")
+            open_msg = self.i18n(f"Transcriber WebUI 运行中：{self.transcriber_webui_path}")
             print(open_msg)
             yield open_msg
         elif tran_webui_chk is False and self.tran_webui_proc is not None:
-            error_msg: str = self.i18n(self.cfg.kill_process(self.tran_webui_proc.pid))
+            error_msg = self.i18n(self.cfg.kill_process(self.tran_webui_proc.pid))
             if error_msg != '':
                 print(error_msg)
                 yield error_msg
 
             self.tran_webui_proc = None
 
-            close_msg: str = self.i18n(f"Transcriber WebUI 已关闭：{self.transcriber_webui_path}")
+            close_msg = self.i18n(f"Transcriber WebUI 已关闭：{self.transcriber_webui_path}")
             print(close_msg)
             yield close_msg
 
@@ -134,7 +129,7 @@ class MainWebUI(object):
                                     with gr.Row():
                                         slicer_min_length = gr.Number(
                                             label=self.i18n("最短持续时间（毫秒）"),
-                                            value=3000,
+                                            value=5000,
                                             step=1,
                                             precision=0,
                                             interactive=True
@@ -149,14 +144,14 @@ class MainWebUI(object):
                                     with gr.Row():
                                         slicer_hop_size = gr.Number(
                                             label=self.i18n("跳跃步长（毫秒）"),
-                                            value=10,
+                                            value=100,
                                             step=1,
                                             precision=0,
                                             interactive=True
                                         )
                                         slicer_max_sil_kept = gr.Number(
                                             label=self.i18n("最长静音时间（毫秒）"),
-                                            value=1000,
+                                            value=100,
                                             step=1,
                                             precision=0,
                                             interactive=True
@@ -260,7 +255,7 @@ class MainWebUI(object):
                                 [tran_info]
                             )
                     with gr.TabItem(self.i18n("2.2. 合并标注")):
-                        gr.Markdown(self.i18n("##### 合并同名的音频和标注，方便在 Aegisub 中手动校对。"))
+                        gr.Markdown(self.i18n("##### 合并归一化后的音频和对应的标注，请注意，上传顺序也要相对应。"))
                         with gr.Row():
                             with gr.Column():
                                 merger_audio_input_path = gr.File(
@@ -300,32 +295,27 @@ class MainWebUI(object):
                             gr.Markdown(self.i18n("请打开 Aegisub 校对标注。以下是一些注意事项："))
                             gr.Markdown(self.i18n("1. **请轴入实际文本，不要将文本标准化。** 不要轴入除当前语言的标点符号之外的任何符号，不需要将数字、时间、地点等文本标准化，请按照实际语言轴入实际文本。"))
                             gr.Markdown(self.i18n("2. **请确保每条标注的开始时间和结束时间准确无误。** 校对轴的质量好坏决定了标注的准确与否。"))
-                            gr.Markdown(self.i18n("3. **请确保每条标注之间含有标点符号并且符合语义逻辑**，比如逗号、句号、感叹号等。 **中文句号（。）和英文句号（.）将作为后续合并数据的合并节点** ，每条标注之间缺少合并节点会导致后续数据无法合并；标点符号使用不当会影响训练数据集的质量。"))
-                            gr.Markdown(self.i18n("4. **请确保不同语言之间有合并节点分隔。请确保不同语言之间有合并节点分隔！请确保不同语言之间有合并节点分隔！！！**"))
+                            gr.Markdown(self.i18n("3. **请确保每条标注之间含有（半角）标点符号并且符合语义逻辑**，比如逗号、句号、感叹号等，标点符号使用不当会影响训练数据集的质量。"))
+                            gr.Markdown(self.i18n("4. **请确保不同语言之间有合并节点分隔，每条标注之间缺少合并节点会导致后续数据无法合并。** 中文句号（。）、英文句号（.）、中文感叹号（！）、英文感叹号（!）、中文问号（？）、英文问号（?）将作为后续合并数据的合并节点。"))
                             gr.Markdown(self.i18n("5. **请尽量不要轴入无意义的音频，比如呼吸声、笑声、噪声等。** 过多的无意义的音频会影响训练数据集的质量。"))
                             gr.Markdown(self.i18n("6. **请尽量确保每个合并节点之间的持续时间在 3..10 秒之间。** 在参考音频的制作中，不在此范围内的段落将会被排除。"))
                             gr.Markdown(self.i18n("7. **点击此处查看更详细的 Aegisub 教程：[视频版](https://www.bilibili.com/video/BV1oK411T7kL/)**"))
-                with gr.TabItem(self.i18n("3. 准备数据")):
-                    with gr.TabItem(self.i18n("3.1 切分数据")):
-                        gr.Markdown(self.i18n("##### 根据校对后的 SRT 标注切分 WAV 音频，并且生成 LIST 标注。"))
-                    with gr.TabItem(self.i18n("3.2 合并数据")):
-                        gr.Markdown(self.i18n("##### 根据 LIST 标注和指定的合并节点合并 WAV 音频，并且生成新的 LIST 标注。"))
-                    with gr.TabItem(self.i18n("3.3 打包数据")):
-                        gr.Markdown(self.i18n("##### 将合并后的数据打包成适用于 GPT-SoVITS 的训练数据集，可以直接投入训练。"))
-                        with gr.Row():
-                            with gr.Column():
-                                with gr.Group():
-                                    with gr.Row():
-                                        gr.Markdown(self.i18n("需打包的音频文件和同名的字幕文件所在目录的路径。"))
-                                        packer_input_path = gr.Textbox(label=self.i18n("Input: 输入目录"), value="output_revised", interactive=True)
-                                with gr.Group():
-                                    with gr.Row():
-                                        gr.Markdown(self.i18n("打包后的训练数据集的输出目录。"))
-                                        packer_output_path = gr.Textbox(label=self.i18n("Output: 输出目录"), value="dataset", interactive=True)
-                            with gr.Column():
-                                packer_info = gr.Textbox(label=self.i18n("进程输出信息"), interactive=False)
-                                open_packer_btn = gr.Button(self.i18n("开始打包"), variant="primary", visible=True)
-                                open_packer_btn.click(open_packer, [packer_input_path, packer_output_path], [packer_info, open_packer_btn])
+                with gr.TabItem(self.i18n("3. 打包数据")):
+                    gr.Markdown(self.i18n("##### 将合并并且校对后的数据打包成适用于 GPT-SoVITS 的训练数据集。"))
+                    with gr.Row():
+                        with gr.Column():
+                            with gr.Group():
+                                with gr.Row():
+                                    gr.Markdown(self.i18n("需打包的音频文件和同名的字幕文件所在目录的路径。"))
+                                    packer_input_path = gr.Textbox(label=self.i18n("Input: 输入目录"), value="output_revised", interactive=True)
+                            with gr.Group():
+                                with gr.Row():
+                                    gr.Markdown(self.i18n("打包后的训练数据集的输出目录。"))
+                                    packer_output_path = gr.Textbox(label=self.i18n("Output: 输出目录"), value="dataset", interactive=True)
+                        with gr.Column():
+                            packer_info = gr.Textbox(label=self.i18n("进程输出信息"), interactive=False)
+                            open_packer_btn = gr.Button(self.i18n("开始打包"), variant="primary", visible=True)
+                            open_packer_btn.click(open_packer, [packer_input_path, packer_output_path], [packer_info, open_packer_btn])
                 with gr.TabItem(self.i18n("4. 参考音频")):
                     with gr.TabItem(self.i18n("4.1. 情感识别")):
                         gr.Markdown(self.i18n("##### 施工中，请稍等……"))

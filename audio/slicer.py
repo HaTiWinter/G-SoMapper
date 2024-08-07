@@ -63,7 +63,7 @@ class AudioSlicer(object):
                 continue
 
             audio_name = f.stem
-            sub_path = output_path / audio_name
+            sub_path = output_path / audio_name / "_sliced"
             sub_path.mkdir(parents=True, exist_ok=True)
 
             ffmpeg_cmd = [

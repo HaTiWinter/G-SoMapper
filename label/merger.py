@@ -1,23 +1,23 @@
 from pathlib import Path
 from typing import Generator
 from typing import Optional
-from typing import Tuple
-from typing import Dict
 
 import librosa
-import mimetypes
 import numpy as np
 import soundfile as sf
 
-from config import Config
 from i18n import I18nAuto
 
 
 class AudioMerger(object):
 
     def __init__(self) -> None:
-        self.cfg = Config()
         self.i18n = I18nAuto()
+
+    def _unformat_time(self, timestamp: str) -> int:
+        h, m, s, ms = map(int, (timestamp[17:19], timestamp[20:22], timestamp[23:25], timestamp[26:29]))
+
+        return h * 3600000 + m * 60000 + s * 1000 + ms
 
     def _format_time(self, time: int) -> str:
         h, m = divmod(time, 3600000)
@@ -31,9 +31,9 @@ class AudioMerger(object):
         file_input_a: Optional[tuple[str]],
         file_input_b: Optional[tuple[str]],
         output: str
-    ) -> Generator[Tuple[str, Dict[str, str | bool]], None, None]:
+    ) -> Generator[tuple[str, dict[str, str | bool]], None, None]:
         if file_input_a is None or file_input_b is None:
-            error_msg: str = self.i18n("请上传需要合并的同名的音频和字幕。")
+            error_msg = self.i18n("请上传需要合并的同名的音频和字幕。")
             print(error_msg)
             yield error_msg, {"__type__": "update", "visible": True}
             return
@@ -41,71 +41,115 @@ class AudioMerger(object):
         file_list_b = (Path(file_path) for file_path in file_input_b)
         output_path = Path(output)
 
-        self.proc_count = 0
-        self.success_count = 0
-        self.audio_path_list = []
-        self.subtitle_path_list = []
-        self.audio_name_list = []
-        self.subtitle_name_list = []
-        self.audio_data_list =  []
+        proc_count = 0
+        success_count = 0
+        index = 0
+        start_time = 0
+        audio_path_list = []
+        subtitle_path_list = []
+        audio_data_list = []
+        buffer = {}
 
         for file in file_list_a:
-            type = mimetypes.guess_type(file)[0]
-            if (type is None or not (type == "audio/wav")):
-                continue_msg = self.i18n(f"跳过：{file}")
+            type = file.suffix
+            if type == '' or not type == ".wav":
+                continue_msg = f"passed：{file}"
                 print(continue_msg)
                 yield continue_msg, {"__type__": "update", "visible": False}
                 continue
             audio_path = file
-            self.audio_path_list.append(audio_path)
+            audio_path_list.append(audio_path)
         for file in file_list_b:
-            type = mimetypes.guess_type(file)[0]
-            if (type is None or not (type == "application/x-srt")):
-                continue_msg = self.i18n(f"跳过：{file}")
+            type = file.suffix
+            if type == '' or not type == ".srt":
+                continue_msg = f"passed：{file}"
                 print(continue_msg)
                 yield continue_msg, {"__type__": "update", "visible": False}
                 continue
             subtitle_path = file
-            self.subtitle_path_list.append(subtitle_path)
-        if len(self.audio_path_list) != len(self.subtitle_path_list):
-            error_msg = self.i18n("请确保上传的音频数量与字幕数量相匹配。")
+            subtitle_path_list.append(subtitle_path)
+        audio_path_list_len = len(audio_path_list)
+        subtitle_path_list_len = len(subtitle_path_list)
+        if audio_path_list_len != subtitle_path_list_len:
+            error_msg = "请确保上传的音频数量与字幕数量相匹配。"
             print(error_msg)
             yield error_msg, {"__type__": "update", "visible": True}
             return
-        for audio in self.audio_path_list:
-            audio_name_i = audio.stem
-            self.audio_name_list.append(audio_name_i)
-        for subtitle in self.subtitle_path_list:
-            subtitle_name_i = subtitle.stem
-            self.subtitle_name_list.append(subtitle_name_i)
-        for i in range(len(self.audio_path_list)):
-            if self.audio_name_list[i] == self.subtitle_name_list[i]:
-                audio_path = self.audio_path_list[i]
-                subtitle_path = self.subtitle_path_list[i]
-                audio_name = audio_path.stem.split("_")[0]
-                sub_path = output_path / audio_name
-                sub_path.mkdir(parents=True, exist_ok=True)
-                file_path = str(file_path)
-                audio_name_ext = f"{audio_name}.wav"    
-                output_audio_path = str(sub_path / audio_name_ext)
-                output_subtitle_name_ext = f"{audio_name}.srt"
-                output_subtitle_path = sub_path / output_subtitle_name_ext
-                duration = librosa.get_duration(path=audio_path)
-                end_time = self._format_time(int(duration * 1000))
-                audio_data = librosa.load(audio_path)[0]
-                self.audio_data_list.append(audio_data)
-                self.proc_count += 1
-                with open(str(subtitle_path), "r", encoding="utf-8") as f:
-                    subtitle_data = f.readlines()
-                    text = subtitle_data[2]
-                with open (str(output_subtitle_path), "w", encoding="utf-8") as f:
-                    f.write(f"1\n00:00:00,000 --> {end_time}\n{text}\n\n")
-        merged_audio_data = np.concatenate(self.audio_data_list)
-        sf.write(
-            output_audio_path,
-            merged_audio_data,
-            32000,
-            subtype="PCM_16",
-            endian="LITTLE",
-            format="WAV"
-        )
+        proc_count = audio_path_list_len
+
+        merging_msg = f"合并中：检测到总共有 {proc_count} 个文件"
+        print(merging_msg)
+        yield merging_msg, {"__type__": "update", "visible": False}
+        for i in range(audio_path_list_len):
+            audio_path = audio_path_list[i]
+            audio_path_str = str(audio_path)
+            subtitle_path = subtitle_path_list[i]
+            subtitle_path_str = str(subtitle_path)
+
+            audio_base_name_with_index = audio_path.stem
+            subtitle_base_name_with_index = subtitle_path.stem
+
+            audio_base_name = audio_base_name_with_index.split("_")[0] if audio_base_name_with_index == subtitle_base_name_with_index else audio_base_name_with_index.split("_")[0]
+
+            sub_path = output_path / f"{audio_base_name}_merged"
+            sub_path.mkdir(parents=True, exist_ok=True)
+
+            audio_name_ext = f"{audio_base_name}.wav"
+            output_audio_path = sub_path / audio_name_ext
+            output_audio_path_str = str(output_audio_path)
+
+            output_subtitle_name_ext = f"{audio_base_name}.srt"
+            output_subtitle_path = sub_path / output_subtitle_name_ext
+            output_subtitle_path_str = str(output_subtitle_path)
+
+            audio_data, sr = librosa.load(audio_path_str, sr=None)
+
+            with open(subtitle_path_str, "r", encoding="utf-8") as f:
+                subtitle_data = f.readlines()
+                index = index + int(subtitle_data[0].strip())
+                timestamp = subtitle_data[1].strip()
+                subtitle_text = subtitle_data[2].strip()
+
+                end_time = self._unformat_time(timestamp)
+
+            buffer.setdefault(audio_base_name, {
+                "audio_data_list": [np.zeros(0)],
+                "output_audio_path": '',
+                "output_subtitle_path": ''
+            }).setdefault(index, {
+                "end_time": 0,
+                "text": ''
+            })
+            buffer[audio_base_name]["audio_data_list"].append(audio_data)
+            buffer[audio_base_name]["output_audio_path"] = output_audio_path_str
+            buffer[audio_base_name]["output_subtitle_path"] = output_subtitle_path_str
+            buffer[audio_base_name][index]["end_time"] = end_time
+            buffer[audio_base_name][index]["text"] = subtitle_text
+        for key, value in buffer.items():
+            audio_data_list = value["audio_data_list"]
+            output_audio_path_str = value["output_audio_path"]
+            output_subtitle_path_str = value["output_subtitle_path"]
+
+            merged_audio_data = np.concatenate(audio_data_list)
+            sf.write(
+                output_audio_path_str,
+                merged_audio_data,
+                sr,
+                subtype="PCM_16",
+                endian="LITTLE",
+                format="WAV"
+            )
+
+            with open(output_subtitle_path_str, "w", encoding="utf-8") as f:
+                for i in range(audio_path_list_len):
+                    i += 1
+                    end_time = start_time + value[i]["end_time"]
+                    text = value[i]["text"]
+
+                    f.write(f"{i}\n{self._format_time(start_time)} --> {self._format_time(end_time)}\n{text}\n\n")
+
+                    start_time = end_time
+                    success_count += 1
+        done_msg = self.i18n(f"合并完毕：最终成功合并 {success_count} 个文件")
+        print(done_msg)
+        yield done_msg, {"__type__":"update","visible":True}

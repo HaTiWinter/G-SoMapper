@@ -4,8 +4,6 @@ import psutil
 import socket
 import subprocess as subp
 from subprocess import Popen
-from typing import Tuple
-from typing import List
 
 import torch
 import gradio as gr
@@ -40,29 +38,31 @@ class Config:
 
         self.ip_lookup_host = "1.1.1.1"
         self.ip_lookup_port = 1
-        self.local_ip = self.__get_local_ip()
+        self.local_ip = self._get_local_ip()
         self.main_local_url = f"http://{self.local_ip}:{self.gr_main_webui_port}"
         self.transcriber_local_url = f"http://{self.local_ip}:{self.gr_transcriber_webui_port}"
         self.os_name = sys.platform
         self.python_ver = sys.version
 
-        self.device, self.gpu_count, self.gpu_names = self.__get_device()
-        self.is_half = self.__get_is_half(self.gpu_names)
+        self.device, self.gpu_count, self.gpu_names = self._get_device()
+        self.is_half = self._get_is_half(self.gpu_names)
 
         self.total_cpu_cores = psutil.cpu_count(logical=False)
         self.model_path = "src/funasr/models/SenseVoiceSmall"
         self.vad_model_path = "src/funasr/models/speech_fsmn_vad_zh-cn-16k-common-pytorch"
         self.punc_model_path = "src/funasr/models/punc_ct-transformer_cn-en-common-vocab471067-large"
 
-    def __get_local_ip(self) -> str:
+    def _get_local_ip(self) -> str:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
             s.connect((self.ip_lookup_host, self.ip_lookup_port))
             return s.getsockname()[0]
+        except:
+            return "0.0.0.0"
         finally:
             s.close()
 
-    def __get_device(self) -> Tuple[str, int, List[str]]:
+    def _get_device(self) -> tuple[str, int, list[str]]:
         if torch.cuda.is_available():
             device = "cuda"
             device_count = torch.cuda.device_count()
@@ -73,9 +73,9 @@ class Config:
             gpu_names = []
         return device, device_count, gpu_names
 
-    def __get_is_half(
+    def _get_is_half(
         self,
-        gpu_names: List[str]
+        gpu_names: list[str]
     ) -> bool:
         gpu_names_upper = [name.upper() for name in gpu_names]
         if (

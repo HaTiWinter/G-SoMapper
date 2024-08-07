@@ -15,7 +15,7 @@ from i18n import I18nAuto
 
 class AudioTranscriber(object):
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.cfg = Config()
         self.i18n = I18nAuto()
         self.pattern = re.compile(r"<[^>]*>")
@@ -39,6 +39,13 @@ class AudioTranscriber(object):
             use_itn=False
         )
 
+    def _format_time(self, time: int) -> str:
+        h, m = divmod(time, 3600000)
+        m, s = divmod(m, 60000)
+        s, ms = divmod(s, 1000)
+
+        return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
+
     def Transcriber(
         self,
         input: Optional[tuple[str]],
@@ -56,6 +63,7 @@ class AudioTranscriber(object):
         self.success_count = 0
         self.audio_path_list = []
         self.output_subtitle_path_list = []
+        self.audio_end_time_list = []
         self.text_list = []
         self.content_buf = {}
 
@@ -73,13 +81,20 @@ class AudioTranscriber(object):
             self.proc_count += 1
 
             audio_path = file_path
-            audio_name = file.stem.split("_")[0]
-            sub_path = output_path / audio_name
+            audio_base_name = file.stem.split("_")[0]
+            sub_path = output_path / f"{audio_base_name}_transcribed"
             sub_path.mkdir(parents=True, exist_ok=True)
             output_subtitle_name_ext = file.with_suffix(".srt").name
             output_subtitle_path = str(sub_path / output_subtitle_name_ext)
+
+            audio_data, sr = librosa.load(audio_path)
+            audio_duration_s = librosa.get_duration(y=audio_data, sr=sr)
+            audio_duration_ms = int(audio_duration_s * 1000)
+            audio_end_time = self._format_time(audio_duration_ms)
+
             self.audio_path_list.append(audio_path)
             self.output_subtitle_path_list.append(output_subtitle_path)
+            self.audio_end_time_list.append(audio_end_time)
 
         transcribing_msg = self.i18n(f"转写中：检测到总共有 {self.proc_count} 个文件")
         print(transcribing_msg)
@@ -88,12 +103,13 @@ class AudioTranscriber(object):
         for i in range(len(res)):
             text = re.sub(self.pattern, '', res[i]["text"])
             self.text_list.append(text)
-        for i, path in enumerate(self.output_subtitle_path_list):
+        for i, subtitle_path in enumerate(self.output_subtitle_path_list):
             text = self.text_list[i]
-            subtitle_text = f"1\n00:00:00,000 --> 00:00:00,000\n{text}\n\n"
-            if path not in self.content_buf:
-                self.content_buf[path] = ''
-            self.content_buf[path] += subtitle_text
+            end_time = self.audio_end_time_list[i]
+            subtitle_text = f"1\n00:00:00,000 --> {end_time}\n{text}\n\n"
+            if subtitle_path not in self.content_buf:
+                self.content_buf[subtitle_path] = ''
+            self.content_buf[subtitle_path] += subtitle_text
         if self.content_buf != {}:
             for file_path, content in self.content_buf.items():
                 with open(file_path, "w", encoding="utf-8") as f:

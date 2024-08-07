@@ -60,7 +60,7 @@ class AudioNormalizer(object):
         self.success_count = 0
         self.audio_path_list = []
         self.output_audio_path_list = []
-        self.content_buf = {}
+        self.buffer = {}
 
         for file in file_list:
             file_path = str(file)
@@ -75,54 +75,50 @@ class AudioNormalizer(object):
 
             audio_name = file.stem.split("_")[0]
             audio_name_ext = file.name
-            sub_path = output_path / audio_name
+            sub_path = output_path / f"{audio_name}_normalized"
             sub_path.mkdir(parents=True, exist_ok=True)
             output_audio_path = sub_path / audio_name_ext
             self.output_audio_path_list.append(str(output_audio_path))
-            output_mapping_path = sub_path / f"{audio_name}.log"
-            with open(output_mapping_path, "a", encoding="utf-8") as f:
-                f.write(f"{output_audio_path}\n")
 
         normalizing_msg = self.i18n(f"归一化中：检测到总共有 {self.proc_count} 个文件")
         print(normalizing_msg)
         yield normalizing_msg, {"__type__": "update", "visible": False}
-        for i in range(len(self.audio_path_list)):
+        audio_path_list_len = len(self.audio_path_list)
+        for i in range(audio_path_list_len):
             audio_path = self.audio_path_list[i]
             output_audio_path = self.output_audio_path_list[i]
-            audio_data, sr = librosa.load(audio_path, sr=None)
 
-            normalized_audio_data_len = len(audio_data)
-            audio_duration = normalized_audio_data_len / sr
-            if audio_duration == 0:
+            audio_data, sr = librosa.load(audio_path, sr=None)
+            audio_duration_s = librosa.get_duration(y=audio_data, sr=sr)
+            if audio_duration_s == 0:
                 error_msg = self.i18n(f"归一化失败：请确保输入音频不为空 -> {audio_path}")
                 print(error_msg)
                 yield error_msg, {"__type__": "update", "visible": False}
                 continue
-            if audio_path not in self.content_buf:
-                self.content_buf[audio_path] = {"audio_data": np.zeros_like(audio_data), "output_path": ''}
-            self.content_buf[audio_path]["audio_data"] += audio_data
-            self.content_buf[audio_path]["output_path"] += output_audio_path
-        if self.content_buf != {}:
-            for file_path, content in self.content_buf.items():
-                audio_data = content["audio_data"]
-                output_path = content["output_path"]
-                origin_loud = self.meter.integrated_loudness(audio_data)
-                normalized_audio_data = self._normalize_loudness(
-                    audio_data,
-                    origin_loud,
-                    target_loud,
-                    max_peak
-                )
-                resampled_audio_data = librosa.resample(normalized_audio_data, orig_sr=44100.0, target_sr=32000.0)
-                sf.write(
-                    output_path,
-                    resampled_audio_data,
-                    32000,
-                    subtype="PCM_16",
-                    endian="LITTLE",
-                    format="WAV"
-                )
-                self.success_count += 1
+
+            self.buffer.setdefault(audio_path, {"audio_data": np.zeros(0), "output_path": ''})
+            self.buffer[audio_path]["audio_data"] += audio_data
+            self.buffer[audio_path]["output_path"] += output_audio_path
+        for key, value in self.buffer.items():
+            audio_data = value["audio_data"]
+            output_path = value["output_path"]
+            origin_loud = self.meter.integrated_loudness(audio_data)
+            normalized_audio_data = self._normalize_loudness(
+                audio_data,
+                origin_loud,
+                target_loud,
+                max_peak
+            )
+            resampled_audio_data = librosa.resample(normalized_audio_data, orig_sr=44100.0, target_sr=32000.0)
+            sf.write(
+                output_path,
+                resampled_audio_data,
+                32000,
+                subtype="PCM_16",
+                endian="LITTLE",
+                format="WAV"
+            )
+            self.success_count += 1
         done_msg = self.i18n(f"归一化完毕：最终成功归一化 {self.success_count} 个文件")
         print(done_msg)
         yield done_msg, {"__type__":"update","visible":True}
