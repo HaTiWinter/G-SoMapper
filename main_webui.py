@@ -1,8 +1,8 @@
 import os
 import sys
 import shutil
-from subprocess import Popen
 from pathlib import Path
+from subprocess import Popen
 from typing import Generator
 from typing import Optional
 
@@ -95,6 +95,7 @@ class MainWebUI(object):
             yield close_msg
 
     def __call__(self) -> None:
+        print("hello")
         with gr.Blocks(title=self.gr_main_title, theme=self.gr_theme) as app:
             gr.Markdown(self.i18n("# HomePage - G-SoMapper WebUI"))
             gr.Markdown(self.i18n("##### [此项目受 MIT LICENSE 保护](https://github.com/HaTiWinter/G-SoMapper) | 请按步骤开始构建您的 [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) 训练数据集："))
@@ -324,4 +325,5 @@ class MainWebUI(object):
 
 
 if __name__ == "__main__":
-    MainWebUI()
+    webui = MainWebUI()
+    webui()

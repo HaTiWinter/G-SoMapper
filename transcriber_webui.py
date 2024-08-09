@@ -55,4 +55,5 @@ class TranscriberWebUI(object):
 
 
 if __name__ == "__main__":
-    TranscriberWebUI()
+    webui = TranscriberWebUI()
+    webui()
