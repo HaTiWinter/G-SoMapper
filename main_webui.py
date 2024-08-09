@@ -6,23 +6,26 @@ from pathlib import Path
 from typing import Generator
 from typing import Optional
 
+import gradio as gr
+
 current_path = Path(__file__).parent
-temp_path = current_path / "temp"
-if temp_path.exists():
-    shutil.rmtree(temp_path)
-temp_path.mkdir(parents=True, exist_ok=True)
 current_path_str = str(current_path)
+temp_path = current_path / "temp"
 temp_path_str = str(temp_path)
 
-sys.path.insert(0, current_path_str)
 current_value = os.environ.get("Path", '')
 if current_path_str not in current_value:
     new_value = f"{current_path_str}{os.pathsep}{current_value}" if current_value else current_path_str
     os.environ["Path"] = new_value
 os.environ["TEMP"] = temp_path_str
 
-import gradio as gr
+if temp_path.exists():
+    shutil.rmtree(temp_path)
+temp_path.mkdir(parents=True, exist_ok=True)
 
+sys.path.insert(0, current_path_str)
+
+from utils import Utils
 from config import Config
 from i18n import I18nAuto
 from audio.slicer import AudioSlicer
@@ -35,12 +38,13 @@ class MainWebUI(object):
 
     def __init__(self) -> None:
         self.cfg = Config()
+        self.utils = Utils()
         self.i18n = I18nAuto()
         self.norm = AudioNormalizer()
         self.merger = AudioMerger()
         self.tran_webui_proc = None
 
-        self.gr_main_title = self.cfg.gr_main_title
+        self.gr_main_title = "Homepage - G-SoMapper WebUI"
         self.gr_theme = self.cfg.gr_theme
         self.gr_max_size = self.cfg.gr_max_size
         self.gr_default_concurrency_limit = self.cfg.gr_default_concurrency_limit
@@ -48,19 +52,10 @@ class MainWebUI(object):
         self.gr_is_quiet = self.cfg.gr_is_quiet
         self.gr_is_share = self.cfg.gr_is_share
         self.gr_server_name = self.cfg.gr_server_name
-        self.gr_main_webui_port = self.cfg.gr_main_webui_port
+        self.gr_main_webui_port = int(os.environ.get("main_webui_port", 23333))
 
-        self.transcriber_webui_path = self.cfg.transcriber_webui_path
-        self.transcriber_webui_cmd = self.cfg.transcriber_webui_cmd
-
-        self.main_local_url = self.cfg.main_local_url
-        self.os_name = self.cfg.os_name
-        self.python_ver = self.cfg.python_ver
-        self.device = self.cfg.device
-        self.gpu_names = self.cfg.gpu_names
-
-        print(self.os_name, self.python_ver, self.device, self.gpu_names)
-        print(self.i18n(f"Homepage running on local URL: {self.main_local_url}"))
+        self.transcriber_webui_path = "transcriber_webui.py"
+        self.transcriber_webui_cmd = ["python", self.transcriber_webui_path]
 
     def _open_slicer(
         self,
@@ -88,7 +83,7 @@ class MainWebUI(object):
             print(open_msg)
             yield open_msg
         elif tran_webui_chk is False and self.tran_webui_proc is not None:
-            error_msg = self.i18n(self.cfg.kill_process(self.tran_webui_proc.pid))
+            error_msg = self.i18n(self.utils.kill_proc(self.tran_webui_proc.pid))
             if error_msg != '':
                 print(error_msg)
                 yield error_msg
@@ -99,7 +94,7 @@ class MainWebUI(object):
             print(close_msg)
             yield close_msg
 
-    def webui(self) -> None:
+    def __call__(self) -> None:
         with gr.Blocks(title=self.gr_main_title, theme=self.gr_theme) as app:
             gr.Markdown(self.i18n("# HomePage - G-SoMapper WebUI"))
             gr.Markdown(self.i18n("##### [此项目受 MIT LICENSE 保护](https://github.com/HaTiWinter/G-SoMapper) | 请按步骤开始构建您的 [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) 训练数据集："))
@@ -319,10 +314,7 @@ class MainWebUI(object):
                 with gr.TabItem(self.i18n("4. 参考音频")):
                     with gr.TabItem(self.i18n("4.1. 情感识别")):
                         gr.Markdown(self.i18n("##### 施工中，请稍等……"))
-            app.queue(
-                max_size=self.gr_max_size,
-                default_concurrency_limit=self.gr_default_concurrency_limit
-            ).launch(
+            app.queue(max_size=self.gr_max_size, default_concurrency_limit=self.gr_default_concurrency_limit).launch(
                 inbrowser=self.gr_is_inbrowser,
                 quiet=self.gr_is_quiet,
                 server_name=self.gr_server_name,
@@ -332,5 +324,4 @@ class MainWebUI(object):
 
 
 if __name__ == "__main__":
-    main = MainWebUI()
-    main.webui()
+    MainWebUI()

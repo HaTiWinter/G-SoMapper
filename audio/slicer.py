@@ -2,8 +2,6 @@ import subprocess as subp
 from pathlib import Path
 from typing import Generator
 from typing import Optional
-from typing import Tuple
-from typing import Dict
 
 import mimetypes
 import numpy as np
@@ -41,7 +39,7 @@ class AudioSlicer(object):
         self,
         input: Optional[tuple[str]],
         output: str
-    ) -> Generator[Tuple[str, Dict[str, str | bool]], None, None]:
+    ) -> Generator[tuple[str, dict[str, str | bool]], None, None]:
         if input is None:
             error_msg = self.i18n("请上传需要切分的视频或音频。")
             print(error_msg)

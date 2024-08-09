@@ -1,11 +1,8 @@
 from pathlib import Path
 from typing import Generator
 from typing import Optional
-from typing import Tuple
-from typing import Dict
 
 import librosa
-import mimetypes
 import numpy as np
 import soundfile as sf
 from pyloudnorm import Meter
@@ -17,7 +14,6 @@ class AudioNormalizer(object):
 
     def __init__(self) -> None:
         self.i18n = I18nAuto()
-        self.meter = Meter(44100)
 
     def _normalize_loudness(
         self,
@@ -47,7 +43,7 @@ class AudioNormalizer(object):
         output: str,
         target_loud: float,
         max_peak: float
-    ) -> Generator[Tuple[str, Dict[str, str | bool]], None, None]:
+    ) -> Generator[tuple[str, dict[str, str | bool]], None, None]:
         if input is None:
             error_msg = self.i18n("请上传需要归一化的音频。")
             print(error_msg)
@@ -64,8 +60,8 @@ class AudioNormalizer(object):
 
         for file in file_list:
             file_path = str(file)
-            type = mimetypes.guess_type(file_path)[0]
-            if (type is None or not (type == "audio/wav")):
+            type = file.suffix
+            if type == '' or not type == ".wav":
                 continue_msg = self.i18n(f"跳过：{file_path}。")
                 print(continue_msg)
                 yield continue_msg, {"__type__": "update", "visible": False}
@@ -96,20 +92,22 @@ class AudioNormalizer(object):
                 yield error_msg, {"__type__": "update", "visible": False}
                 continue
 
-            self.buffer.setdefault(audio_path, {"audio_data": np.zeros(0), "output_path": ''})
+            self.buffer.setdefault(audio_path, {"audio_data": np.zeros(0), "sample_rate": 0.0, "output_path": ''})
             self.buffer[audio_path]["audio_data"] += audio_data
+            self.buffer[audio_path]["sample_rate"] += sr
             self.buffer[audio_path]["output_path"] += output_audio_path
         for key, value in self.buffer.items():
             audio_data = value["audio_data"]
+            sample_rate = value["sample_rate"]
             output_path = value["output_path"]
-            origin_loud = self.meter.integrated_loudness(audio_data)
+            origin_loud = Meter(sample_rate).integrated_loudness(audio_data)
             normalized_audio_data = self._normalize_loudness(
                 audio_data,
                 origin_loud,
                 target_loud,
                 max_peak
             )
-            resampled_audio_data = librosa.resample(normalized_audio_data, orig_sr=44100.0, target_sr=32000.0)
+            resampled_audio_data = librosa.resample(normalized_audio_data, orig_sr=sample_rate, target_sr=32000.0)
             sf.write(
                 output_path,
                 resampled_audio_data,

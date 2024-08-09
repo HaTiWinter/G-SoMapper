@@ -1,43 +1,49 @@
 import re
+import psutil
 from pathlib import Path
 from typing import Generator
 from typing import Optional
-from typing import Tuple
-from typing import Dict
 
+import torch
 import librosa
-import mimetypes
 from funasr import AutoModel
 
-from config import Config
 from i18n import I18nAuto
 
 
 class AudioTranscriber(object):
 
-    def __init__(self) -> None:
-        self.cfg = Config()
+    def __init__(self, lang=None) -> None:
         self.i18n = I18nAuto()
         self.pattern = re.compile(r"<[^>]*>")
+        self.ncpu = psutil.cpu_count(logical=False)
+        self.device, self.gpu_count = self._get_device()
 
-        self.model_path = self.cfg.model_path
-        self.vad_model_path = self.cfg.vad_model_path
-        self.punc_model_path = self.cfg.punc_model_path
-        self.device = self.cfg.device
-        self.ncpu = self.cfg.total_cpu_cores
+        self.model_path = "src/funasr/models/SenseVoiceSmall"
+        self.vad_model_path = "src/funasr/models/speech_fsmn_vad_zh-cn-16k-common-pytorch"
+        self.punc_model_path = "src/funasr/models/punc_ct-transformer_cn-en-common-vocab471067-large"
 
         self.funasr_model = AutoModel(
             model=self.model_path,
             vad_model=self.vad_model_path,
             punc_model=self.punc_model_path,
-            language="auto",
+            language=lang,
             max_single_segment_time=30000,
             device=self.device,
             ncpu=self.ncpu,
-            ngpu=self.cfg.gpu_count,
+            ngpu=self.gpu_count,
             trust_remote_code=False,
             use_itn=False
         )
+
+    def _get_device(self) -> tuple[str, int]:
+        if torch.cuda.is_available():
+            device = "cuda"
+            gpu_count = torch.cuda.device_count()
+        else:
+            device = "cpu"
+            gpu_count = 0
+        return device, gpu_count
 
     def _format_time(self, time: int) -> str:
         h, m = divmod(time, 3600000)
@@ -50,7 +56,7 @@ class AudioTranscriber(object):
         self,
         input: Optional[tuple[str]],
         output: str
-    ) -> Generator[Tuple[str, Dict[str, str | bool]], None, None]:
+    ) -> Generator[tuple[str, dict[str, str | bool]], None, None]:
         if input is None:
             error_msg = self.i18n("请上传需要转写的音频。")
             print(error_msg)
@@ -69,11 +75,8 @@ class AudioTranscriber(object):
 
         for file in file_list:
             file_path = str(file)
-            type = mimetypes.guess_type(file_path)[0]
-            if (
-                type is None
-                or not (type == "audio/wav")
-            ):
+            type = file.suffix
+            if type == '' or not type == ".wav":
                 continue_msg = self.i18n(f"跳过：{file_path}")
                 print(continue_msg)
                 yield continue_msg, {"__type__": "update", "visible": False}

@@ -1,13 +1,6 @@
-import sys
-from pathlib import Path
-
-
-current_path: Path = Path(__file__).parent
-current_path_str: str = str(current_path)
-sys.path.insert(0, str(current_path))
+import os
 
 import gradio as gr
-from gradio.themes.default import Default
 
 from config import Config
 from i18n import I18nAuto
@@ -16,26 +9,22 @@ from label.transcriber import AudioTranscriber
 
 class TranscriberWebUI(object):
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.cfg = Config()
         self.i18n = I18nAuto()
-        self.tran = AudioTranscriber()
+        self.tran = AudioTranscriber(lang="auto")
 
-        self.gr_transcriber_title: str = self.cfg.gr_transcriber_title
-        self.gr_theme: Default = self.cfg.gr_theme
-        self.gr_max_size: int = self.cfg.gr_max_size
-        self.gr_default_concurrency_limit: int = self.cfg.gr_default_concurrency_limit
-        self.gr_is_inbrowser: bool = self.cfg.gr_is_inbrowser
-        self.gr_is_quiet: bool = self.cfg.gr_is_quiet
-        self.gr_is_share: bool = self.cfg.gr_is_share
-        self.gr_server_name: str = self.cfg.gr_server_name
-        self.gr_transcriber_webui_port: int = self.cfg.gr_transcriber_webui_port
+        self.gr_transcriber_title = "Transcriber - G-SoMapper WebUI"
+        self.gr_theme = self.cfg.gr_theme
+        self.gr_max_size = self.cfg.gr_max_size
+        self.gr_default_concurrency_limit = self.cfg.gr_default_concurrency_limit
+        self.gr_is_inbrowser = self.cfg.gr_is_inbrowser
+        self.gr_is_quiet = self.cfg.gr_is_quiet
+        self.gr_is_share = self.cfg.gr_is_share
+        self.gr_server_name = self.cfg.gr_server_name
+        self.gr_transcriber_webui_port = int(os.environ.get("transcriber_webui_port", 23334))
 
-        self.transcriber_local_url: str = self.cfg.transcriber_local_url
-
-        print(self.i18n(f"Transcriber running on local URL: {self.transcriber_local_url}"))
-
-    def webui(self) -> None:
+    def __call__(self) -> None:
         with gr.Blocks(title=self.gr_transcriber_title, theme=self.gr_theme) as app:
             gr.Markdown(self.i18n("# Transcriber - G-SoMapper WebUI"))
             with gr.Row():
@@ -66,5 +55,4 @@ class TranscriberWebUI(object):
 
 
 if __name__ == "__main__":
-    tran = TranscriberWebUI()
-    tran.webui()
+    TranscriberWebUI()
