@@ -30,8 +30,8 @@ from config import Config
 from i18n import I18nAuto
 from audio.slicer import AudioSlicer
 from audio.normalizer import AudioNormalizer
-from label.merger import AudioMerger
-from dataset.packer import open_packer
+from label.merger import LabelMerger
+from dataset.packer import DatasetPacker
 
 
 class MainWebUI(object):
@@ -41,7 +41,8 @@ class MainWebUI(object):
         self.utils = Utils()
         self.i18n = I18nAuto()
         self.norm = AudioNormalizer()
-        self.merger = AudioMerger()
+        self.merger = LabelMerger()
+        self.packer = DatasetPacker()
         self.tran_webui_proc = None
 
         self.gr_main_title = "Homepage - G-SoMapper WebUI"
@@ -152,7 +153,7 @@ class MainWebUI(object):
                                             interactive=True
                                         )
                                 with gr.Group():
-                                    slicer_info = gr.Textbox(label=self.i18n("输出"), interactive=False)
+                                    slicer_info = gr.Textbox(label=self.i18n("进程输出信息"), interactive=False)
                                     open_slicer_btn = gr.Button(
                                         self.i18n("开始切分"),
                                         variant="primary",
@@ -250,7 +251,7 @@ class MainWebUI(object):
                                 [tran_info]
                             )
                     with gr.TabItem(self.i18n("2.2. 合并标注")):
-                        gr.Markdown(self.i18n("##### 合并归一化后的音频和对应的标注，请注意，上传顺序也要相对应。"))
+                        gr.Markdown(self.i18n("##### 合并归一化后的音频和生成的标注，请注意，上传顺序要互相对应。"))
                         with gr.Row():
                             with gr.Column():
                                 merger_audio_input_path = gr.File(
@@ -296,21 +297,40 @@ class MainWebUI(object):
                             gr.Markdown(self.i18n("6. **请尽量确保每个合并节点之间的持续时间在 3..10 秒之间。** 在参考音频的制作中，不在此范围内的段落将会被排除。"))
                             gr.Markdown(self.i18n("7. **点击此处查看更详细的 Aegisub 教程：[视频版](https://www.bilibili.com/video/BV1oK411T7kL/)**"))
                 with gr.TabItem(self.i18n("3. 打包数据")):
-                    gr.Markdown(self.i18n("##### 将合并并且校对后的数据打包成适用于 GPT-SoVITS 的训练数据集。"))
+                    gr.Markdown(self.i18n("##### 将归一化后的音频和校对后的标注打包成适用于 GPT-SoVITS 的训练数据集。请注意，上传顺序要相对应。"))
                     with gr.Row():
-                        with gr.Column():
-                            with gr.Group():
-                                with gr.Row():
-                                    gr.Markdown(self.i18n("需打包的音频文件和同名的字幕文件所在目录的路径。"))
-                                    packer_input_path = gr.Textbox(label=self.i18n("Input: 输入目录"), value="output_revised", interactive=True)
-                            with gr.Group():
-                                with gr.Row():
-                                    gr.Markdown(self.i18n("打包后的训练数据集的输出目录。"))
-                                    packer_output_path = gr.Textbox(label=self.i18n("Output: 输出目录"), value="dataset", interactive=True)
-                        with gr.Column():
-                            packer_info = gr.Textbox(label=self.i18n("进程输出信息"), interactive=False)
-                            open_packer_btn = gr.Button(self.i18n("开始打包"), variant="primary", visible=True)
-                            open_packer_btn.click(open_packer, [packer_input_path, packer_output_path], [packer_info, open_packer_btn])
+                            with gr.Column():
+                                packer_audio_input_path = gr.File(
+                                    label=self.i18n("上传音频"),
+                                    type="filepath",
+                                    file_count="multiple",
+                                    interactive=True
+                                )
+                            with gr.Column():
+                                packer_subtitle_input_path = gr.File(
+                                    label=self.i18n("上传标注"),
+                                    type="filepath",
+                                    file_count="multiple",
+                                    interactive=True
+                                )
+                            with gr.Column():
+                                packer_output_path = gr.Textbox(label=self.i18n("输出目录"), interactive=True)
+                                with gr.Group():
+                                    packer_info = gr.Textbox(label=self.i18n("进程输出信息"), interactive=False)
+                                    open_packer_btn = gr.Button(
+                                        self.i18n("开始打包"),
+                                        variant="primary",
+                                        visible=True
+                                    )
+                                    open_packer_btn.click(
+                                        self.packer.Packer,
+                                        [
+                                            packer_audio_input_path,
+                                            packer_subtitle_input_path,
+                                            packer_output_path
+                                        ],
+                                        [packer_info, open_packer_btn]
+                                    )
                 with gr.TabItem(self.i18n("4. 参考音频")):
                     with gr.TabItem(self.i18n("4.1. 情感识别")):
                         gr.Markdown(self.i18n("##### 施工中，请稍等……"))

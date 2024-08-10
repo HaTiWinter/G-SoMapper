@@ -9,7 +9,7 @@ import soundfile as sf
 from i18n import I18nAuto
 
 
-class AudioMerger(object):
+class LabelMerger(object):
 
     def __init__(self) -> None:
         self.i18n = I18nAuto()
@@ -77,7 +77,7 @@ class AudioMerger(object):
             return
         proc_count = audio_path_list_len
 
-        merging_msg = f"合并中：检测到总共有 {proc_count} 个文件"
+        merging_msg = f"合并中：检测到总共有 {proc_count} 组文件"
         print(merging_msg)
         yield merging_msg, {"__type__": "update", "visible": False}
         for i in range(audio_path_list_len):

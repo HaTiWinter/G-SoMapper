@@ -1,6 +1,13 @@
 import os
+import sys
+from pathlib import Path
 
 import gradio as gr
+
+current_path = Path(__file__).parent
+current_path_str = str(current_path)
+
+sys.path.insert(0, current_path_str)
 
 from config import Config
 from i18n import I18nAuto
@@ -27,6 +34,7 @@ class TranscriberWebUI(object):
     def __call__(self) -> None:
         with gr.Blocks(title=self.gr_transcriber_title, theme=self.gr_theme) as app:
             gr.Markdown(self.i18n("# Transcriber - G-SoMapper WebUI"))
+            gr.Markdown(self.i18n("##### [此项目受 MIT LICENSE 保护](https://github.com/HaTiWinter/G-SoMapper) | 及时关闭 Transcriber WebUI 可以减少显存占用："))
             with gr.Row():
                 with gr.Column():
                     tran_input_path = gr.File(
@@ -38,7 +46,7 @@ class TranscriberWebUI(object):
                 with gr.Column():
                     tran_output_path = gr.Textbox(label=self.i18n("输出目录"), interactive=True)
                     with gr.Group():
-                        tran_info = gr.Textbox(label=self.i18n("输出"), interactive=False)
+                        tran_info = gr.Textbox(label=self.i18n("进程输出信息"), interactive=False)
                         open_tran_btn = gr.Button(self.i18n("开始生成"), variant="primary", visible=True)
                         open_tran_btn.click(
                             self.tran.Transcriber,
