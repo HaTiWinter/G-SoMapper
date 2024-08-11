@@ -28,10 +28,10 @@ sys.path.insert(0, current_path_str)
 from utils import Utils
 from config import Config
 from i18n import I18nAuto
-from audio.slicer import Slicer
-from audio.normalizer import Normalizer
-from label.merger import Merger
-from dataset.packer import Packer
+from slicer import Slicer
+from normalizer import Normalizer
+from merger import Merger
+from packer import Packer
 
 
 class MainWebUI(object):
@@ -98,8 +98,8 @@ class MainWebUI(object):
 
     def __call__(self) -> None:
         with gr.Blocks(title=self.gr_main_title, theme=self.gr_theme) as app:
-            gr.Markdown(self.i18n("# HomePage - G-SoMapper WebUI"))
-            gr.Markdown(self.i18n("##### [此项目受 MIT LICENSE 保护](https://github.com/HaTiWinter/G-SoMapper) | 请按步骤开始构建您的 [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) 训练数据集："))
+            gr.Markdown("# HomePage - G-SoMapper WebUI")
+            gr.Markdown(self.i18n("##### [This repository is under MIT LICENSE protection](https://github.com/HaTiWinter/G-SoMapper) | Please follow the steps to start building your [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) training dataset:"))
             with gr.Tabs():
                 with gr.TabItem(self.i18n("1. 准备音频")):
                     with gr.TabItem(self.i18n("1.1. 切分音频")):

@@ -11,7 +11,7 @@ sys.path.insert(0, current_path_str)
 
 from config import Config
 from i18n import I18nAuto
-from label.transcriber import Transcriber
+from transcriber import Transcriber
 
 
 class TranscriberWebUI(object):
@@ -33,7 +33,7 @@ class TranscriberWebUI(object):
 
     def __call__(self) -> None:
         with gr.Blocks(title=self.gr_transcriber_title, theme=self.gr_theme) as app:
-            gr.Markdown(self.i18n("# Transcriber - G-SoMapper WebUI"))
+            gr.Markdown("# Transcriber - G-SoMapper WebUI")
             gr.Markdown(self.i18n("##### [此项目受 MIT LICENSE 保护](https://github.com/HaTiWinter/G-SoMapper) | 及时关闭 Transcriber WebUI 可以减少显存占用："))
             with gr.Row():
                 with gr.Column():
