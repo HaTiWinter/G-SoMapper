@@ -4,12 +4,12 @@ from typing import Optional
 
 from i18n import I18nAuto
 
-class DatasetPacker(object):
+class Packer(object):
 
     def __init__(self) -> None:
         self.i18n = I18nAuto()
 
-    def Packer(
+    def __call__(
         self,
         file_input_a: Optional[tuple[str]],
         file_input_b: Optional[tuple[str]],

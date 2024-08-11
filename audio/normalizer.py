@@ -10,7 +10,7 @@ from pyloudnorm import Meter
 from i18n import I18nAuto
 
 
-class AudioNormalizer(object):
+class Normalizer(object):
 
     def __init__(self) -> None:
         self.i18n = I18nAuto()
@@ -37,7 +37,7 @@ class AudioNormalizer(object):
 
         return normalized_audio_data
 
-    def Normalizer(
+    def __call__(
         self,
         input: Optional[tuple[str]],
         output: str,

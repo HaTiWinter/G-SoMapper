@@ -28,10 +28,10 @@ sys.path.insert(0, current_path_str)
 from utils import Utils
 from config import Config
 from i18n import I18nAuto
-from audio.slicer import AudioSlicer
-from audio.normalizer import AudioNormalizer
-from label.merger import LabelMerger
-from dataset.packer import DatasetPacker
+from audio.slicer import Slicer
+from audio.normalizer import Normalizer
+from label.merger import Merger
+from dataset.packer import Packer
 
 
 class MainWebUI(object):
@@ -40,9 +40,9 @@ class MainWebUI(object):
         self.cfg = Config()
         self.utils = Utils()
         self.i18n = I18nAuto()
-        self.norm = AudioNormalizer()
-        self.merger = LabelMerger()
-        self.packer = DatasetPacker()
+        self.normalizer = Normalizer()
+        self.merger = Merger()
+        self.packer = Packer()
         self.tran_webui_proc = None
 
         self.gr_main_title = "Homepage - G-SoMapper WebUI"
@@ -68,13 +68,14 @@ class MainWebUI(object):
         hop_size: int,
         max_sil_kept: int
     ) -> Generator[tuple[str, dict[str, str | bool]], None, None]:
-        for res in AudioSlicer(
+        slicer = Slicer(
             threshold,
             min_length,
             min_interval,
             hop_size,
             max_sil_kept
-        ).Slicer(input, output):
+        )
+        for res in slicer(input, output):
             yield res
 
     def _open_transcriber_webui(self, tran_webui_chk: bool) -> Generator[str, None, None]:
@@ -225,7 +226,7 @@ class MainWebUI(object):
                                         visible=True
                                     )
                                     open_norm_btn.click(
-                                        self.norm.Normalizer,
+                                        self.normalizer,
                                         [
                                             norm_input_path,
                                             norm_output_path,
@@ -277,7 +278,7 @@ class MainWebUI(object):
                                         visible=True
                                     )
                                     open_merger_btn.click(
-                                        self.merger.Merger,
+                                        self.merger,
                                         [
                                             merger_audio_input_path,
                                             merger_subtitle_input_path,
@@ -323,7 +324,7 @@ class MainWebUI(object):
                                         visible=True
                                     )
                                     open_packer_btn.click(
-                                        self.packer.Packer,
+                                        self.packer,
                                         [
                                             packer_audio_input_path,
                                             packer_subtitle_input_path,

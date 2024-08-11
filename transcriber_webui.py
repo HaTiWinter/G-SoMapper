@@ -11,7 +11,7 @@ sys.path.insert(0, current_path_str)
 
 from config import Config
 from i18n import I18nAuto
-from label.transcriber import AudioTranscriber
+from label.transcriber import Transcriber
 
 
 class TranscriberWebUI(object):
@@ -19,7 +19,7 @@ class TranscriberWebUI(object):
     def __init__(self) -> None:
         self.cfg = Config()
         self.i18n = I18nAuto()
-        self.tran = AudioTranscriber(lang="auto")
+        self.tran = Transcriber(lang="auto")
 
         self.gr_transcriber_title = "Transcriber - G-SoMapper WebUI"
         self.gr_theme = self.cfg.gr_theme

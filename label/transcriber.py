@@ -11,7 +11,7 @@ from funasr import AutoModel
 from i18n import I18nAuto
 
 
-class AudioTranscriber(object):
+class Transcriber(object):
 
     def __init__(self, lang=None) -> None:
         self.i18n = I18nAuto()

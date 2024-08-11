@@ -9,7 +9,7 @@ import soundfile as sf
 from i18n import I18nAuto
 
 
-class LabelMerger(object):
+class Merger(object):
 
     def __init__(self) -> None:
         self.i18n = I18nAuto()
@@ -26,7 +26,7 @@ class LabelMerger(object):
 
         return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
-    def Merger(
+    def __call__(
         self,
         file_input_a: Optional[tuple[str]],
         file_input_b: Optional[tuple[str]],
