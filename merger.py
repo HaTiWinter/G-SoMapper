@@ -113,7 +113,7 @@ class Merger(object):
                 end_time = self._unformat_time(timestamp)
 
             buffer.setdefault(audio_base_name, {
-                "audio_data_list": [np.zeros(0)],
+                "audio_data_list": [np.zeros((0,))],
                 "output_audio_path": '',
                 "output_subtitle_path": ''
             }).setdefault(index, {
@@ -135,7 +135,7 @@ class Merger(object):
                 output_audio_path_str,
                 merged_audio_data,
                 sr,
-                subtype="PCM_16",
+                subtype="PCM_24",
                 endian="LITTLE",
                 format="WAV"
             )

@@ -103,7 +103,7 @@ class MainWebUI(object):
             with gr.Tabs():
                 with gr.TabItem(self.i18n("1. 准备音频")):
                     with gr.TabItem(self.i18n("1.1. 切分音频")):
-                        gr.Markdown(self.i18n("##### 切分过长的视频或音频，输出 WAV 格式的 16 位 44100 Hz 单声道音频，防止后续 UVR 爆内存或爆显存。"))
+                        gr.Markdown(self.i18n("##### 切分过长的视频或音频，输出 WAV 格式的 24 位 48000 Hz 单声道音频。"))
                         with gr.Row():
                             with gr.Column():
                                 slicer_input_path = gr.File(
@@ -188,7 +188,7 @@ class MainWebUI(object):
                             gr.Markdown(self.i18n("4. **Reverb HQ 模型的效果比 UVR-De-Echo-Dereverb 好。**"))
                             gr.Markdown(self.i18n("5. **点击此处查看更详细的 UVR GUI 入门级教程：[图文版](https://www.bilibili.com/read/cv27499700) | [视频版](https://www.bilibili.com/video/BV1F4421c7qU)**"))
                     with gr.TabItem(self.i18n("1.3. 归一化音频")):
-                        gr.Markdown(self.i18n("##### 均衡音频响度，优化音频质量；输出 WAV 格式的 16 位 32000 Hz 单声道音频，方便后续进一步处理。"))
+                        gr.Markdown(self.i18n("##### 均衡音频响度，优化音频质量；输出 WAV 格式的 24 位 48000 Hz 单声道音频，方便后续进一步处理。"))
                         with gr.Row():
                             with gr.Column():
                                 norm_input_path = gr.File(
@@ -237,7 +237,7 @@ class MainWebUI(object):
                                     )
                 with gr.TabItem(self.i18n("2. 准备标注")):
                     with gr.TabItem(self.i18n("2.1. 生成标注")):
-                        gr.Markdown(self.i18n("##### 生成准确率较高的标注，需要后期手动校对。"))
+                        gr.Markdown(self.i18n("##### 生成准确率较高的标注。"))
                         with gr.Column():
                             tran_info = gr.Textbox(label=self.i18n("进程输出信息"), interactive=False)
                             tran_webui_chk = gr.Checkbox(
@@ -252,7 +252,7 @@ class MainWebUI(object):
                                 [tran_info]
                             )
                     with gr.TabItem(self.i18n("2.2. 合并标注")):
-                        gr.Markdown(self.i18n("##### 合并归一化后的音频和生成的标注，请注意，上传顺序要互相对应。"))
+                        gr.Markdown(self.i18n("##### 合并归一化后的音频和生成的标注。请注意，上传顺序要互相对应。"))
                         with gr.Row():
                             with gr.Column():
                                 merger_audio_input_path = gr.File(

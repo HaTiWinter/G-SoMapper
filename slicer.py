@@ -25,7 +25,7 @@ class Slicer(object):
         self.proc_count = 0
         self.success_count = 0
 
-        self.sr = 44100.0
+        self.sr = 48000
 
         if not min_length >= min_interval >= hop_size:
             raise ValueError("The following condition must be satisfied: min_length >= min_interval >= hop_size")
@@ -163,8 +163,8 @@ class Slicer(object):
                 "-loglevel", "error",
                 "-i", file_path,
                 "-vn",
-                "-acodec", "pcm_s16le",
-                "-f", "s16le",
+                "-acodec", "pcm_s24le",
+                "-f", "s24le",
                 "-ac", "1",
                 "-ar", str(self.sr),
                 "pipe:1"
@@ -198,7 +198,7 @@ class Slicer(object):
                             output_audio_path,
                             chunk,
                             self.sr,
-                            subtype="PCM_16",
+                            subtype="PCM_24",
                             endian="LITTLE",
                             format="WAV"
                         )

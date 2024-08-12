@@ -1,7 +1,11 @@
 from pathlib import Path
 from typing import Generator
 from typing import Optional
+import sys
+current_path = Path(__file__).parent
+current_path_str = str(current_path)
 
+sys.path.insert(0, current_path_str)
 import librosa
 import numpy as np
 import soundfile as sf
@@ -41,9 +45,10 @@ class Normalizer(object):
         self,
         input: Optional[tuple[str]],
         output: str,
-        target_loud: float,
-        max_peak: float
+        target_loud: float = -16.0,
+        max_peak: float = -1.0
     ) -> Generator[tuple[str, dict[str, str | bool]], None, None]:
+        print(1+1==4)
         if input is None:
             error_msg = self.i18n("请上传需要归一化的音频。")
             print(error_msg)
@@ -92,10 +97,10 @@ class Normalizer(object):
                 yield error_msg, {"__type__": "update", "visible": False}
                 continue
 
-            self.buffer.setdefault(audio_path, {"audio_data": np.zeros(0), "sample_rate": 0.0, "output_path": ''})
-            self.buffer[audio_path]["audio_data"] += audio_data
-            self.buffer[audio_path]["sample_rate"] += sr
-            self.buffer[audio_path]["output_path"] += output_audio_path
+            self.buffer.setdefault(audio_path, {"audio_data": np.zeros((0,)), "sample_rate": 0.0, "output_path": ''})
+            self.buffer[audio_path]["audio_data"] = audio_data
+            self.buffer[audio_path]["sample_rate"] = sr
+            self.buffer[audio_path]["output_path"] = output_audio_path
         for key, value in self.buffer.items():
             audio_data = value["audio_data"]
             sample_rate = value["sample_rate"]
@@ -107,12 +112,12 @@ class Normalizer(object):
                 target_loud,
                 max_peak
             )
-            resampled_audio_data = librosa.resample(normalized_audio_data, orig_sr=sample_rate, target_sr=32000.0)
+            resampled_audio_data = librosa.resample(normalized_audio_data, orig_sr=sample_rate, target_sr=48000.0)
             sf.write(
                 output_path,
                 resampled_audio_data,
-                32000,
-                subtype="PCM_16",
+                48000,
+                subtype="PCM_24",
                 endian="LITTLE",
                 format="WAV"
             )
