@@ -40,9 +40,10 @@ class MainWebUI(object):
         self.cfg = Config()
         self.utils = Utils()
         self.i18n = I18nAuto()
-        self.normalizer = Normalizer()
+        self.norm = Normalizer()
         self.merger = Merger()
         self.packer = Packer()
+
         self.tran_webui_proc = None
 
         self.gr_main_title = "Homepage - G-SoMapper WebUI"
@@ -60,8 +61,8 @@ class MainWebUI(object):
 
     def _open_slicer(
         self,
-        input: Optional[tuple[str]],
-        output: str,
+        input_path: Optional[tuple[str]],
+        output_path: str,
         threshold: float,
         min_length: int,
         min_interval: int,
@@ -75,7 +76,35 @@ class MainWebUI(object):
             hop_size,
             max_sil_kept
         )
-        for res in slicer(input, output):
+        for res in slicer(input_path, output_path):
+            yield res
+
+    def _open_normalizer(
+        self,
+        input_path: Optional[tuple[str]],
+        output_path: str,
+        target_loud: float,
+        max_peak: float
+    ) -> Generator[tuple[str, dict[str, str | bool]], None, None]:
+        for res in self.norm(input_path, output_path, target_loud, max_peak):
+            yield res
+
+    def _open_merger(
+        self,
+        audio_input_path: Optional[tuple[str]],
+        subtitle_input_path: Optional[tuple[str]],
+        output_path: str
+    ) -> Generator[tuple[str, dict[str, str | bool]], None, None]:
+        for res in self.merger(audio_input_path, subtitle_input_path, output_path):
+            yield res
+
+    def _open_packer(
+        self,
+        audio_input_path: Optional[tuple[str]],
+        subtitle_input_path: Optional[tuple[str]],
+        output_path: str
+    ) -> Generator[tuple[str, dict[str, str | bool]], None, None]:
+        for res in self.packer(audio_input_path, subtitle_input_path, output_path):
             yield res
 
     def _open_transcriber_webui(self, tran_webui_chk: bool) -> Generator[str, None, None]:
@@ -117,7 +146,7 @@ class MainWebUI(object):
                                 with gr.Group():
                                     slicer_threshold = gr.Slider(
                                         label=self.i18n("阈值（分贝）"),
-                                        value=-24.0,
+                                        value=-16.0,
                                         minimum=-48.0,
                                         maximum=-0.1,
                                         step=0.1,
@@ -174,7 +203,7 @@ class MainWebUI(object):
                                         [slicer_info, open_slicer_btn],
                                     )
                     with gr.TabItem(self.i18n("1.2. 过滤音频")):
-                        gr.Markdown(self.i18n("##### 过滤无关音频数据，优化音频质量。[点击此处下载最新版本的 UVR GUI](https://github.com/Anjok07/ultimatevocalremovergui/releases)"))
+                        gr.Markdown(self.i18n("##### 过滤无关音频数据，优化音频质量。 | [点击此处下载最新的 UVR GUI 正式版](https://github.com/Anjok07/ultimatevocalremovergui/releases) | [点击此处下载最新的 UVR GUI 测试版](https://github.com/TRvlvr/model_repo/releases)"))
                         with gr.Group():
                             gr.Markdown(self.i18n("请打开 UVR GUI 过滤音频。以下 UVR 模型组合效果最好："))
                             gr.Markdown(self.i18n("**1. 提取人声：BS-Roformer-ViperX-1297 或 MDX23C-InstVoc HQ。**"))
@@ -188,7 +217,7 @@ class MainWebUI(object):
                             gr.Markdown(self.i18n("4. **Reverb HQ 模型的效果比 UVR-De-Echo-Dereverb 好。**"))
                             gr.Markdown(self.i18n("5. **点击此处查看更详细的 UVR GUI 入门级教程：[图文版](https://www.bilibili.com/read/cv27499700) | [视频版](https://www.bilibili.com/video/BV1F4421c7qU)**"))
                     with gr.TabItem(self.i18n("1.3. 归一化音频")):
-                        gr.Markdown(self.i18n("##### 均衡音频响度，优化音频质量；输出 WAV 格式的 24 位 48000 Hz 单声道音频，方便后续进一步处理。"))
+                        gr.Markdown(self.i18n("##### 均衡音频响度，输出 WAV 格式的 24 位 48000 Hz 单声道音频。"))
                         with gr.Row():
                             with gr.Column():
                                 norm_input_path = gr.File(
@@ -202,7 +231,7 @@ class MainWebUI(object):
                                 with gr.Group():
                                     gr.Markdown(self.i18n("执行 ITU-R BS.1770-4 标准"))
                                     with gr.Row():
-                                        target_loud = gr.Slider(
+                                        norm_target_loud = gr.Slider(
                                             label=self.i18n("目标响度（分贝）"),
                                             minimum=-36.0,
                                             maximum=-6.0,
@@ -210,7 +239,7 @@ class MainWebUI(object):
                                             step=0.1,
                                             interactive=True
                                         )
-                                        max_peak = gr.Slider(
+                                        norm_max_peak = gr.Slider(
                                             label=self.i18n("最大振幅（分贝）"),
                                             minimum=-12.0,
                                             maximum=-0.1,
@@ -226,12 +255,12 @@ class MainWebUI(object):
                                         visible=True
                                     )
                                     open_norm_btn.click(
-                                        self.normalizer,
+                                        self._open_normalizer,
                                         [
                                             norm_input_path,
                                             norm_output_path,
-                                            target_loud,
-                                            max_peak
+                                            norm_target_loud,
+                                            norm_max_peak
                                         ],
                                         [norm_info, open_norm_btn]
                                     )
@@ -278,7 +307,7 @@ class MainWebUI(object):
                                         visible=True
                                     )
                                     open_merger_btn.click(
-                                        self.merger,
+                                        self._open_merger,
                                         [
                                             merger_audio_input_path,
                                             merger_subtitle_input_path,
@@ -287,7 +316,7 @@ class MainWebUI(object):
                                         [merger_info, open_merger_btn]
                                     )
                     with gr.TabItem(self.i18n("2.3. 校对标注")):
-                        gr.Markdown(self.i18n("##### 在 Aegisub 中手动校对 Transcriber 生成的标注，最终形成精确的标注。[点击此处下载最新版本的 Aegisub](https://aegisub.org/downloads)"))
+                        gr.Markdown(self.i18n("##### 手动校对 Transcriber 生成的标注。 | [点击此处下载最新的 Aegisub 正式版](https://aegisub.org/downloads)"))
                         with gr.Group():
                             gr.Markdown(self.i18n("请打开 Aegisub 校对标注。以下是一些注意事项："))
                             gr.Markdown(self.i18n("1. **请轴入实际文本，不要将文本标准化。** 不要轴入除当前语言的标点符号之外的任何符号，不需要将数字、时间、地点等文本标准化，请按照实际语言轴入实际文本。"))
@@ -324,7 +353,7 @@ class MainWebUI(object):
                                         visible=True
                                     )
                                     open_packer_btn.click(
-                                        self.packer,
+                                        self._open_packer,
                                         [
                                             packer_audio_input_path,
                                             packer_subtitle_input_path,

@@ -1,11 +1,8 @@
+import shutil
 from pathlib import Path
 from typing import Generator
 from typing import Optional
-import sys
-current_path = Path(__file__).parent
-current_path_str = str(current_path)
 
-sys.path.insert(0, current_path_str)
 import librosa
 import numpy as np
 import soundfile as sf
@@ -48,7 +45,6 @@ class Normalizer(object):
         target_loud: float = -16.0,
         max_peak: float = -1.0
     ) -> Generator[tuple[str, dict[str, str | bool]], None, None]:
-        print(1+1==4)
         if input is None:
             error_msg = self.i18n("请上传需要归一化的音频。")
             print(error_msg)
@@ -77,6 +73,8 @@ class Normalizer(object):
             audio_name = file.stem.split("_")[0]
             audio_name_ext = file.name
             sub_path = output_path / f"{audio_name}_normalized"
+            if sub_path.exists():
+                shutil.rmtree(sub_path)
             sub_path.mkdir(parents=True, exist_ok=True)
             output_audio_path = sub_path / audio_name_ext
             self.output_audio_path_list.append(str(output_audio_path))

@@ -19,6 +19,7 @@ class TranscriberWebUI(object):
     def __init__(self) -> None:
         self.cfg = Config()
         self.i18n = I18nAuto()
+
         self.tran = Transcriber(lang="auto")
 
         self.gr_transcriber_title = "Transcriber - G-SoMapper WebUI"

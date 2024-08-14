@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 from typing import Generator
 from typing import Optional
@@ -92,6 +93,8 @@ class Merger(object):
             audio_base_name = audio_base_name_with_index.split("_")[0] if audio_base_name_with_index == subtitle_base_name_with_index else audio_base_name_with_index.split("_")[0]
 
             sub_path = output_path / f"{audio_base_name}_merged"
+            if sub_path.exists():
+                shutil.rmtree(sub_path)
             sub_path.mkdir(parents=True, exist_ok=True)
 
             audio_name_ext = f"{audio_base_name}.wav"

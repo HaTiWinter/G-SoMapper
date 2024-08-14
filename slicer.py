@@ -1,3 +1,4 @@
+import shutil
 import subprocess as subp
 from pathlib import Path
 from typing import Generator
@@ -15,17 +16,16 @@ class Slicer(object):
 
     def __init__(
         self,
-        threshold: float = -24.0,
+        threshold: float = -16.0,
         min_length: int = 5000,
         min_interval: int = 100,
         hop_size: int = 100,
         max_sil_kept: int = 100
     ) -> None:
         self.i18n = I18nAuto()
-        self.proc_count = 0
-        self.success_count = 0
 
         self.sr = 48000
+        self.sr_str = "48000"
 
         if not min_length >= min_interval >= hop_size:
             raise ValueError("The following condition must be satisfied: min_length >= min_interval >= hop_size")
@@ -153,20 +153,21 @@ class Slicer(object):
 
             audio_name = f.stem
             sub_path = output_path / f"{audio_name}_sliced"
+            if sub_path.exists():
+                shutil.rmtree(sub_path)
             sub_path.mkdir(parents=True, exist_ok=True)
 
             ffmpeg_cmd = [
                 "ffmpeg",
-                "-y",
                 "-nostdin",
                 "-hide_banner",
                 "-loglevel", "error",
                 "-i", file_path,
                 "-vn",
-                "-acodec", "pcm_s24le",
-                "-f", "s24le",
+                "-acodec", "pcm_s32le",
+                "-f", "s32le",
                 "-ac", "1",
-                "-ar", str(self.sr),
+                "-ar", self.sr_str,
                 "pipe:1"
             ]
             with open(file_path, "rb") as f:
@@ -189,8 +190,8 @@ class Slicer(object):
                         yield error_msg, {"__type__": "update", "visible": False}
                         continue
 
-                    audio_data = np.frombuffer(proc_out, dtype=np.int16)
-                    self.chunk_count = 1
+                    audio_data = np.frombuffer(proc_out, dtype=np.int32)
+
                     chunks = self._slice(audio_data)
                     for i, chunk in enumerate(chunks, start=1):
                         output_audio_path = str(sub_path / f"{audio_name}_{i}.wav")
