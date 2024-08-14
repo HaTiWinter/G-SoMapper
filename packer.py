@@ -1,6 +1,6 @@
 from pathlib import Path
-from typing import Generator
 from typing import Optional
+from typing import Generator
 
 from i18n import I18nAuto
 

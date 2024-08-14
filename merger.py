@@ -1,7 +1,7 @@
 import shutil
 from pathlib import Path
-from typing import Generator
 from typing import Optional
+from typing import Generator
 
 import librosa
 import numpy as np

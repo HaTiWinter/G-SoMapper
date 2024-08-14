@@ -2,9 +2,9 @@ import os
 import sys
 import shutil
 from pathlib import Path
-from subprocess import Popen
-from typing import Generator
 from typing import Optional
+from typing import Generator
+from subprocess import Popen
 
 import gradio as gr
 
