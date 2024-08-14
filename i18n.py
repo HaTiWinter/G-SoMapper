@@ -6,11 +6,11 @@ from typing import Optional
 class I18nAuto:
     def __init__(self, lang: Optional[str] = None) -> None:
         if lang is None:
-            lang = os.environ.get("LANG")
-            if lang is not None:
-                lang = lang.split(".")[0]
-            else:
+            lang_value = os.environ.get("LANG")
+            if lang_value is None:
                 raise ValueError("Language not found.")
+
+            lang = lang_value.split(".")[0]
         if not os.path.exists(f"src/i18n/locale/{lang}.json"):
             lang = "en_US"
 

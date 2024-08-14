@@ -10,20 +10,14 @@ import gradio as gr
 
 current_path = Path(__file__).parent
 current_path_str = str(current_path)
+sys.path.insert(0, current_path_str)
+
 temp_path = current_path / "temp"
-temp_path_str = str(temp_path)
-
-current_value = os.environ.get("Path", '')
-if current_path_str not in current_value:
-    new_value = f"{current_path_str}{os.pathsep}{current_value}" if current_value else current_path_str
-    os.environ["Path"] = new_value
-os.environ["TEMP"] = temp_path_str
-
 if temp_path.exists():
     shutil.rmtree(temp_path)
 temp_path.mkdir(parents=True, exist_ok=True)
-
-sys.path.insert(0, current_path_str)
+temp_path_str = str(temp_path)
+os.environ["TEMP"] = temp_path_str
 
 from utils import Utils
 from config import Config
@@ -57,7 +51,7 @@ class MainWebUI(object):
         self.gr_main_webui_port = int(os.environ.get("main_webui_port", 23333))
 
         self.transcriber_webui_path = "transcriber_webui.py"
-        self.transcriber_webui_cmd = ["python", self.transcriber_webui_path]
+        self.transcriber_webui_cmd = f"python {self.transcriber_webui_path}"
 
     def _open_slicer(
         self,
@@ -109,7 +103,7 @@ class MainWebUI(object):
 
     def _open_transcriber_webui(self, tran_webui_chk: bool) -> Generator[str, None, None]:
         if tran_webui_chk is True and self.tran_webui_proc is None:
-            self.tran_webui_proc = Popen(self.transcriber_webui_cmd)
+            self.tran_webui_proc = Popen(self.transcriber_webui_cmd, shell = True)
             open_msg = self.i18n(f"Transcriber WebUI 运行中：{self.transcriber_webui_path}")
             print(open_msg)
             yield open_msg

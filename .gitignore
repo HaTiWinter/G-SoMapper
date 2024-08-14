@@ -3,5 +3,6 @@ __pycache__/
 temp/
 runtime/
 src/funasr/
-ffmpeg.exe
-go-main-webui.bat
+
+*.exe
+*.bat

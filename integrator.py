@@ -1,5 +1,7 @@
+import os
+import shutil
 from pathlib import Path
-from shutil import rmtree
+from argparse import ArgumentParser
 from uuid import uuid4
 
 import librosa
@@ -35,7 +37,14 @@ def srt_split_wav(subtitle_path, audio_path, output_dir):
 
             audio_segment = y[int(start_time_sec * sr):int(end_time_sec * sr)]
 
-            sf.write(str(output_dir / audio_name), audio_segment, sr)
+            sf.write(
+                str(output_dir / audio_name),
+                audio_segment,
+                sr,
+                subtype="PCM_24",
+                endian="LITTLE",
+                format="WAV"
+            )
 
 
 def mapping_merge_wav(input_dir, mapping_list_path, output_dir):
@@ -69,7 +78,14 @@ def mapping_merge_wav(input_dir, mapping_list_path, output_dir):
                     y.append(y_temp)
                 merged_audio, sr = np.concatenate(y), sr
 
-                sf.write(str(output_dir / new_audio_name), merged_audio, sr)
+                sf.write(
+                    str(output_dir / new_audio_name),
+                    merged_audio,
+                    sr,
+                    subtype="PCM_24",
+                    endian="LITTLE",
+                    format="WAV"
+                )
 
                 audio_paths_buffer.clear()
                 texts_buffer.clear()
@@ -97,7 +113,14 @@ def list_pack_wav(mapping_list_path, output_dir, speaker):
 
             y, sr = librosa.load(source_audio_path, sr=None)
 
-            sf.write(str(dest_audio_path), y, sr)
+            sf.write(
+                str(dest_audio_path),
+                y,
+                sr,
+                subtype="PCM_24",
+                endian="LITTLE",
+                format="WAV"
+            )
 
 
 class TempDir:
@@ -108,10 +131,11 @@ class TempDir:
         return self.path
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        rmtree(self.path, ignore_errors=True)
+        shutil.rmtree(self.path, ignore_errors=True)
 
 
 def srt_pack_wav(input_path, output_path, speaker, temp_path):
+    temp_path = Path(os.environ.get("TEMP", "temp"))
     splited_path = temp_path / "splitted"
     merged_path = temp_path / "merged"
 

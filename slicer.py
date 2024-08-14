@@ -1,6 +1,7 @@
 import shutil
 import subprocess as subp
 from pathlib import Path
+from subprocess import Popen
 from typing import Generator
 from typing import Optional
 
@@ -25,7 +26,6 @@ class Slicer(object):
         self.i18n = I18nAuto()
 
         self.sr = 48000
-        self.sr_str = "48000"
 
         if not min_length >= min_interval >= hop_size:
             raise ValueError("The following condition must be satisfied: min_length >= min_interval >= hop_size")
@@ -157,25 +157,15 @@ class Slicer(object):
                 shutil.rmtree(sub_path)
             sub_path.mkdir(parents=True, exist_ok=True)
 
-            ffmpeg_cmd = [
-                "ffmpeg",
-                "-nostdin",
-                "-hide_banner",
-                "-loglevel", "error",
-                "-i", file_path,
-                "-vn",
-                "-acodec", "pcm_s32le",
-                "-f", "s32le",
-                "-ac", "1",
-                "-ar", self.sr_str,
-                "pipe:1"
-            ]
+            ffmpeg_cmd = f"ffmpeg -nostdin -hide_banner -loglevel error -i {file_path} -vn -acodec pcm_s32le -f s32le -ac 1 -ar {self.sr} pipe:1"
+
             with open(file_path, "rb") as f:
-                with subp.Popen(
+                with Popen(
                     ffmpeg_cmd,
-                    stdin=f,
-                    stdout=subp.PIPE,
-                    stderr=subp.PIPE
+                    stdin = f,
+                    stdout = subp.PIPE,
+                    stderr = subp.PIPE,
+                    shell = True
                 ) as proc:
                     converting_msg = self.i18n(f"切分中：{file_path}")
                     print(converting_msg)
